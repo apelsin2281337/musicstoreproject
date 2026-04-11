@@ -1,0 +1,107 @@
+import { defineStore } from 'pinia'
+import { ref } from 'vue'
+import { publicApi } from '@/services/api'
+
+export const useMusicStore = defineStore('music', () => {
+  const artists = ref([])
+  const albums = ref([])
+  const popularTracks = ref([])
+  const currentArtist = ref(null)
+  const currentAlbum = ref(null)
+  const artistTracks = ref([])
+  const artistAlbums = ref([])
+  const albumTracks = ref([])
+
+  const loading = ref(false)
+  const error = ref(null)
+
+  async function fetchArtists(params = {}) {
+    loading.value = true
+    error.value = null
+    try {
+      artists.value = await publicApi.getArtists(params)
+    } catch (e) {
+      error.value = e.message
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function fetchArtist(id) {
+    loading.value = true
+    error.value = null
+    try {
+      currentArtist.value = await publicApi.getArtist(id)
+      artistTracks.value = await publicApi.getArtistTracks(id)
+      artistAlbums.value = await publicApi.getArtistAlbums(id)
+    } catch (e) {
+      error.value = e.message
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function fetchAlbums(params = {}) {
+    loading.value = true
+    error.value = null
+    try {
+      albums.value = await publicApi.getAlbums(params)
+    } catch (e) {
+      error.value = e.message
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function fetchAlbum(id) {
+    loading.value = true
+    error.value = null
+    try {
+      currentAlbum.value = await publicApi.getAlbum(id)
+      albumTracks.value = await publicApi.getAlbumTracks(id)
+    } catch (e) {
+      error.value = e.message
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function fetchPopularTracks() {
+    loading.value = true
+    error.value = null
+    try {
+      popularTracks.value = await publicApi.getPopularTracks()
+    } catch (e) {
+      error.value = e.message
+    } finally {
+      loading.value = false
+    }
+  }
+
+  function clearCurrent() {
+    currentArtist.value = null
+    currentAlbum.value = null
+    artistTracks.value = []
+    artistAlbums.value = []
+    albumTracks.value = []
+  }
+
+  return {
+    artists,
+    albums,
+    popularTracks,
+    currentArtist,
+    currentAlbum,
+    artistTracks,
+    artistAlbums,
+    albumTracks,
+    loading,
+    error,
+    fetchArtists,
+    fetchArtist,
+    fetchAlbums,
+    fetchAlbum,
+    fetchPopularTracks,
+    clearCurrent
+  }
+})

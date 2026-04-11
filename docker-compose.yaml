@@ -1,0 +1,37 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: musicstore-db
+    environment:
+      POSTGRES_DB: musicstore
+      POSTGRES_USER: apelsin
+      POSTGRES_PASSWORD: wouldntyouliketoknowthat
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U apelsin -d musicstore"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build: .
+    container_name: spring_backend
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/musicstore
+      SPRING_DATASOURCE_USERNAME: apelsin
+      SPRING_DATASOURCE_PASSWORD: wouldntyouliketoknowthat
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      MUSIC_STORAGE_PATH: /app/uploads
+    volumes:
+      - ./src/main/resources/uploads:/app/uploads
+
+volumes:
+  postgres_data:
