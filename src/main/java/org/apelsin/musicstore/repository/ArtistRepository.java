@@ -11,7 +11,15 @@ import java.util.Optional;
 
 @Repository
 public interface ArtistRepository extends JpaRepository<Artist, Long> {
+    @Query(value = "SELECT * FROM artists ORDER BY artist_rating DESC", nativeQuery = true)
     List<Artist> findAllByOrderByArtistRatingDesc();
-    Optional<Artist> findByArtistName(String name);
-    List<Artist> findByArtistNameContainingIgnoreCase(String name);
+
+    @Query(value = "SELECT * FROM artists WHERE artist_name = :name", nativeQuery = true)
+    Optional<Artist> findByArtistName(@Param("name") String name);
+
+    @Query(value = "SELECT * FROM artists WHERE LOWER(artist_name) LIKE LOWER(CONCAT('%', :name, '%'))", nativeQuery = true)
+    List<Artist> findByArtistNameContainingIgnoreCase(@Param("name") String name);
+
+    @Query(value = "SELECT * FROM artists WHERE artist_id = :artistId", nativeQuery = true)
+    Optional<Artist> findByArtistId(@Param("artistId") Long artistId);
 }

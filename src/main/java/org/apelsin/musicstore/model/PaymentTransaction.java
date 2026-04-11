@@ -16,11 +16,11 @@ public class PaymentTransaction {
     @JoinColumn(name = "order_id")
     private Order transactionOrder;
 
-    private String paymentMethod; // CARD, PAYPAL, CRYPTO
+    private String paymentMethod; 
 
-    private String transactionStatus; // SUCCESS, FAILED, PENDING
+    private String transactionStatus; 
 
-    private String externalTransactionId; // ID из платежной системы
+    private String externalTransactionId; 
 
     private LocalDateTime transactionCompletionDate;
 }

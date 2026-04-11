@@ -52,9 +52,23 @@ public class UserController {
     }
 
     @PostMapping("/{userId}/buy")
-    public ResponseEntity<String> purchase(@PathVariable Long userId, @RequestBody List<Long> trackIds) {
-        userService.buyTracks(userId, trackIds);
+    public ResponseEntity<String> purchase(@PathVariable Long userId, @RequestBody Map<String, Object> body) {
+        List<Long> trackIds = ((List<Integer>) body.get("trackIds")).stream().map(Integer::longValue).toList();
+        String paymentMethod = (String) body.getOrDefault("paymentMethod", "CARD");
+        userService.buyTracks(userId, trackIds, paymentMethod);
         return ResponseEntity.ok("Покупка успешно завершена!");
+    }
+
+    @PostMapping("/{userId}/buy-album/{albumId}")
+    public ResponseEntity<String> purchaseAlbum(@PathVariable Long userId, @PathVariable Long albumId, 
+            @RequestParam(defaultValue = "CARD") String paymentMethod) {
+        userService.buyAlbum(userId, albumId, paymentMethod);
+        return ResponseEntity.ok("Альбом успешно куплен!");
+    }
+
+    @GetMapping("/{userId}/orders")
+    public List<?> getUserOrders(@PathVariable Long userId) {
+        return userService.getUserOrders(userId);
     }
 
     @GetMapping("/recommendations/{trackId}")

@@ -7,6 +7,7 @@
       <button :class="{ active: activeTab === 'artists' }" @click="activeTab = 'artists'">Артисты</button>
       <button :class="{ active: activeTab === 'albums' }" @click="activeTab = 'albums'">Альбомы</button>
       <button :class="{ active: activeTab === 'tracks' }" @click="activeTab = 'tracks'">Треки</button>
+      <button :class="{ active: activeTab === 'logs' }" @click="activeTab = 'logs'; loadLogs()">Логи</button>
     </div>
 
     <div v-if="activeTab === 'users'">
@@ -64,6 +65,14 @@
         </div>
         <button type="submit" class="btn" :disabled="loading">Добавить</button>
       </form>
+      <h3 style="margin-top: 32px;">Удалить альбом</h3>
+      <div class="delete-section">
+        <select v-model="deleteAlbumId" class="form-input">
+          <option value="">Выберите альбом</option>
+          <option v-for="a in albums" :key="a.albumId" :value="a.albumId">{{ a.albumTitle }} - {{ a.albumArtist?.artistName }}</option>
+        </select>
+        <button class="btn btn-danger" @click="deleteAlbum" :disabled="!deleteAlbumId || loading">Удалить</button>
+      </div>
     </div>
 
     <div v-if="activeTab === 'tracks'">
@@ -86,6 +95,29 @@
         <div class="form-group"><label class="form-label">Цена $</label><input v-model="trackForm.price" type="number" step="0.01" class="form-input" /></div>
         <button type="submit" class="btn" :disabled="loading || !trackForm.file">Загрузить</button>
       </form>
+      <h3 style="margin-top: 32px;">Удалить трек</h3>
+      <div class="delete-section">
+        <select v-model="deleteTrackId" class="form-input">
+          <option value="">Выберите трек</option>
+          <option v-for="t in allTracks" :key="t.trackId" :value="t.trackId">{{ t.trackTitle }} - {{ t.trackArtist?.artistName }}</option>
+        </select>
+        <button class="btn btn-danger" @click="deleteTrack" :disabled="!deleteTrackId || loading">Удалить</button>
+      </div>
+    </div>
+
+    <div v-if="activeTab === 'logs'">
+      <h3>История действий</h3>
+      <div class="logs-list">
+        <div v-for="log in logs" :key="log.logId" class="log-item">
+          <div class="log-header">
+            <span class="log-type">{{ log.actionType }}</span>
+            <span class="log-date">{{ new Date(log.actionTimestamp).toLocaleString() }}</span>
+          </div>
+          <p class="log-details">{{ log.actionDetails }}</p>
+          <span class="log-admin">Админ: {{ log.admin?.userUsername }}</span>
+        </div>
+        <p v-if="logs.length === 0">Нет записей</p>
+      </div>
     </div>
   </div>
 </template>
@@ -104,6 +136,10 @@ const loading = ref(false)
 const artists = ref([])
 const albums = ref([])
 const users = ref([])
+const allTracks = ref([])
+const logs = ref([])
+const deleteTrackId = ref('')
+const deleteAlbumId = ref('')
 
 const artistForm = reactive({ name: '', description: '' })
 const albumForm = reactive({ title: '', year: new Date().getFullYear(), price: 9.99, artistId: '' })
@@ -130,7 +166,7 @@ async function loadUsers() {
 async function promoteUser(userId) {
   loading.value = true
   try {
-    await adminApi.promote(userId)
+    await adminApi.promote(userId, authStore.userId)
     toast.success('Пользователь промоучен')
     await loadUsers()
   } catch (e) {
@@ -143,7 +179,7 @@ async function promoteUser(userId) {
 async function demoteUser(userId) {
   loading.value = true
   try {
-    await adminApi.demote(userId)
+    await adminApi.demote(userId, authStore.userId)
     toast.success('Пользователь демоучен')
     await loadUsers()
   } catch (e) {
@@ -155,14 +191,14 @@ async function demoteUser(userId) {
 
 async function addArtist() {
   loading.value = true
-  try { await adminApi.addArtist(artistForm.name, artistForm.description, 0); toast.success('Добавлено'); artistForm.name = ''; artistForm.description = ''; await loadData() }
+  try { await adminApi.addArtist(artistForm.name, artistForm.description, 0, authStore.userId); toast.success('Добавлено'); artistForm.name = ''; artistForm.description = ''; await loadData() }
   catch (e) { toast.error(e.message) }
   finally { loading.value = false }
 }
 
 async function addAlbum() {
   loading.value = true
-  try { await adminApi.addAlbum(albumForm.title, albumForm.year, albumForm.price, albumForm.artistId); toast.success('Добавлено'); albumForm.title = ''; await loadData() }
+  try { await adminApi.addAlbum(albumForm.title, albumForm.year, albumForm.price, albumForm.artistId, authStore.userId); toast.success('Добавлено'); albumForm.title = ''; await loadData() }
   catch (e) { toast.error(e.message) }
   finally { loading.value = false }
 }
@@ -181,6 +217,45 @@ async function uploadTrack() {
 async function loadData() {
   artists.value = await publicApi.getArtists()
   albums.value = await publicApi.getAlbums()
+  allTracks.value = await publicApi.getTracks()
+}
+
+async function loadLogs() {
+  try {
+    logs.value = await adminApi.getLogs()
+  } catch (e) {
+    toast.error('Ошибка загрузки логов')
+  }
+}
+
+async function deleteTrack() {
+  if (!deleteTrackId.value) return
+  loading.value = true
+  try {
+    await adminApi.deleteTrack(deleteTrackId.value, authStore.userId)
+    toast.success('Трек удален')
+    deleteTrackId.value = ''
+    allTracks.value = await publicApi.getTracks()
+  } catch (e) {
+    toast.error(e.message)
+  } finally {
+    loading.value = false
+  }
+}
+
+async function deleteAlbum() {
+  if (!deleteAlbumId.value) return
+  loading.value = true
+  try {
+    await adminApi.deleteAlbum(deleteAlbumId.value, authStore.userId)
+    toast.success('Альбом удален')
+    deleteAlbumId.value = ''
+    albums.value = await publicApi.getAlbums()
+  } catch (e) {
+    toast.error(e.message)
+  } finally {
+    loading.value = false
+  }
 }
 
 onMounted(() => { loadUsers(); loadData() })
@@ -201,4 +276,15 @@ form h3 { font-size: 16px; margin-bottom: 16px; }
 .user-role { padding: 4px 8px; font-size: 12px; border-radius: 4px; text-transform: uppercase; }
 .user-role.admin { background: #fef3c7; color: #92400e; }
 .user-role.user { background: #e5e7eb; color: #374151; }
+.delete-section { display: flex; gap: 12px; margin-top: 12px; }
+.delete-section select { flex: 1; }
+.btn-danger { background: #dc2626; color: white; }
+.btn-danger:hover { background: #b91c1c; }
+.logs-list { display: flex; flex-direction: column; gap: 12px; }
+.log-item { background: white; padding: 16px; border: 1px solid #e5e5e5; border-radius: 4px; }
+.log-header { display: flex; justify-content: space-between; margin-bottom: 8px; }
+.log-type { font-weight: 600; color: #2563eb; }
+.log-date { color: #888; font-size: 12px; }
+.log-details { margin-bottom: 8px; }
+.log-admin { font-size: 12px; color: #666; }
 </style>

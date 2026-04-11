@@ -1,5 +1,6 @@
 package org.apelsin.musicstore.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.time.LocalDate;
@@ -12,8 +13,9 @@ public class License {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long licenseId;
 
-    @OneToOne
+    @OneToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "track_id")
+    @JsonIgnoreProperties({"trackArtist", "trackAlbum", "trackGenres", "trackUploadedBy", "trackFilePath", "trackDownloadCount"})
     private Track licenseTrack;
 
     private String licenseContractNumber;

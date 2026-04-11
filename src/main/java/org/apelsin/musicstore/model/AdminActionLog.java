@@ -1,5 +1,6 @@
 package org.apelsin.musicstore.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.time.LocalDateTime;
@@ -12,18 +13,19 @@ public class AdminActionLog {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long logId;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "admin_id")
-    private User admin; // Администратор, совершивший действие
+    @JsonIgnoreProperties({"userPassword", "userRole", "userPurchasedTracks", "userPurchasedAlbums"})
+    private User admin; 
 
-    private String actionType; // UPLOAD, DELETE, EDIT_INFO, EDIT_PRICE
+    private String actionType; 
 
-    private String targetEntity; // Album, Track, Artist
+    private String targetEntity; 
 
-    private Long targetId; // ID объекта, над которым совершено действие
+    private Long targetId; 
 
     private LocalDateTime actionTimestamp = LocalDateTime.now();
 
     @Column(columnDefinition = "TEXT")
-    private String actionDetails; // Описание изменений
+    private String actionDetails; 
 }

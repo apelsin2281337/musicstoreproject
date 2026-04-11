@@ -52,6 +52,20 @@ export const api = {
     return handleResponse(res)
   },
 
+  async deleteForm(endpoint, formData) {
+    const headers = {}
+    const token = localStorage.getItem('token')
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`
+    }
+    const res = await fetch(`${API_BASE}${endpoint}`, {
+      method: 'DELETE',
+      headers,
+      body: formData
+    })
+    return handleResponse(res)
+  },
+
   async put(endpoint, data) {
     const res = await fetch(`${API_BASE}${endpoint}`, {
       method: 'PUT',
@@ -61,10 +75,11 @@ export const api = {
     return handleResponse(res)
   },
 
-  async delete(endpoint) {
+  async delete(endpoint, data = null, extraHeaders = {}) {
+    const headers = { ...getAuthHeaders(), ...extraHeaders }
     const res = await fetch(`${API_BASE}${endpoint}`, {
       method: 'DELETE',
-      headers: getAuthHeaders()
+      headers
     })
     return handleResponse(res)
   },
@@ -118,6 +133,9 @@ export const publicApi = {
     const query = new URLSearchParams(params).toString()
     return api.get(`/public/tracks${query ? '?' + query : ''}`)
   },
+  getTrack(id) {
+    return api.get(`/public/tracks/${id}`)
+  },
   getPopularTracks() {
     return api.get('/public/tracks/popular')
   }
@@ -130,8 +148,14 @@ export const userApi = {
   getLibrary(userId) {
     return api.get(`/user/${userId}/library`)
   },
-  buyTracks(userId, trackIds) {
-    return api.post(`/user/${userId}/buy`, trackIds)
+  getOrders(userId) {
+    return api.get(`/user/${userId}/orders`)
+  },
+  buyTracks(userId, trackIds, paymentMethod = 'CARD') {
+    return api.post(`/user/${userId}/buy`, { trackIds, paymentMethod })
+  },
+  buyAlbum(userId, albumId, paymentMethod = 'CARD') {
+    return api.post(`/user/${userId}/buy-album/${albumId}?paymentMethod=${paymentMethod}`, {})
   },
   downloadTrack(trackId) {
     api.download(`/user/download/${trackId}`, `track_${trackId}.mp3`)
@@ -160,19 +184,21 @@ export const userApi = {
 }
 
 export const adminApi = {
-  addArtist(name, description, rating) {
+  addArtist(name, description, rating, adminId) {
     const formData = new FormData()
     formData.append('name', name)
     formData.append('description', description)
     formData.append('rating', rating)
+    formData.append('adminId', adminId)
     return api.postForm('/admin/addartist', formData)
   },
-  addAlbum(title, year, price, artistId) {
+  addAlbum(title, year, price, artistId, adminId) {
     const formData = new FormData()
     formData.append('title', title)
     formData.append('year', year)
     formData.append('price', price)
     formData.append('artistId', artistId)
+    formData.append('adminId', adminId)
     return api.postForm('/admin/addalbum', formData)
   },
   uploadTrack(file, title, price, artistId, albumId, adminId) {
@@ -185,13 +211,47 @@ export const adminApi = {
     formData.append('adminId', adminId)
     return api.postForm('/admin/uploadtrack', formData)
   },
-  promote(userId) {
-    return api.post(`/admin/promote/${userId}`, {})
+  promote(userId, adminId) {
+    return api.post(`/admin/promote/${userId}?adminId=${adminId}`, {})
   },
-  demote(userId) {
-    return api.post(`/admin/demote/${userId}`, {})
+  demote(userId, adminId) {
+    return api.post(`/admin/demote/${userId}?adminId=${adminId}`, {})
   },
   getUsers() {
     return api.get('/admin/users')
+  },
+  getLogs() {
+    return api.get('/admin/logs')
+  },
+deleteTrack(trackId, adminId) {
+    return api.delete(`/admin/tracks/${trackId}/delete?adminId=${adminId}`)
+  },
+  deleteAlbum(albumId, adminId) {
+    return api.delete(`/admin/albums/${albumId}?adminId=${adminId}`)
+  },
+
+  getPopularTracks() {
+    return api.get('/admin/tracks/popular')
+  }
+}
+
+export const reviewApi = {
+  getTrackReviews(trackId) {
+    return api.get(`/reviews/track/${trackId}`)
+  },
+  getAlbumReviews(albumId) {
+    return api.get(`/reviews/album/${albumId}`)
+  },
+  addReview(userId, trackId, albumId, rating, comment) {
+    return api.post('/reviews', { userId, trackId, albumId, rating, comment })
+  }
+}
+
+export const licenseApi = {
+  getTrackLicense(trackId) {
+    return api.get(`/licenses/track/${trackId}`)
+  },
+  addLicense(trackId, contractNumber, ownerName, startDate, expirationDate, terms) {
+    return api.post('/licenses', { trackId, contractNumber, ownerName, startDate, expirationDate, terms })
   }
 }

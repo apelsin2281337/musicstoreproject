@@ -6,7 +6,7 @@
       </svg>
     </div>
     <div class="info">
-      <h4 class="title">{{ track.trackTitle }}</h4>
+      <router-link :to="`/track/${track.trackId}`" class="title-link">{{ track.trackTitle }}</router-link>
       <p class="artist">{{ track.trackArtist?.artistName || '—' }}</p>
     </div>
     <div class="right">
@@ -80,6 +80,20 @@ function download() { libraryStore.downloadTrack(props.track.trackId) }
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.title-link {
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: inherit;
+  text-decoration: none;
+}
+
+.title-link:hover {
+  text-decoration: underline;
 }
 
 .artist {

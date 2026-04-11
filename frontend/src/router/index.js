@@ -23,6 +23,11 @@ const routes = [
     component: () => import('@/views/AlbumView.vue')
   },
   {
+    path: '/track/:id',
+    name: 'track',
+    component: () => import('@/views/TrackView.vue')
+  },
+  {
     path: '/cart',
     name: 'cart',
     component: () => import('@/views/CartView.vue')

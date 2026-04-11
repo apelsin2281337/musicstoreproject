@@ -11,7 +11,7 @@
 <script setup>
 import { inject } from 'vue'
 
-const toasts = inject('toasts', { value: [] })
+const toasts = inject('toasts')
 </script>
 
 <style scoped>

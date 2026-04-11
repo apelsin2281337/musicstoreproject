@@ -90,4 +90,9 @@ public class PublicController {
     public List<Track> getPopularTracks() {
         return trackRepository.findAllByOrderByTrackDownloadCountDesc();
     }
+
+    @GetMapping("/tracks/{trackId}")
+    public Track getTrack(@PathVariable Long trackId) {
+        return trackRepository.findById(trackId).orElseThrow();
+    }
 }

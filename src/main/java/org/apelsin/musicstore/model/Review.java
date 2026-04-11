@@ -1,5 +1,6 @@
 package org.apelsin.musicstore.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.time.LocalDateTime;
@@ -12,19 +13,22 @@ public class Review {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long reviewId;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "user_id")
+    @JsonIgnoreProperties({"userPassword", "userRole", "userPurchasedTracks", "userPurchasedAlbums", "userPlaylists", "userUploadedTracks"})
     private User reviewUser;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "track_id")
+    @JsonIgnoreProperties({"trackArtist", "trackAlbum", "trackGenres", "trackUploadedBy", "trackFilePath"})
     private Track reviewTrack;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "album_id")
+    @JsonIgnoreProperties({"albumArtist", "albumTracks"})
     private Album reviewAlbum;
 
-    private Integer reviewRating; // Оценка от 1 до 5
+    private Integer reviewRating; 
 
     @Column(columnDefinition = "TEXT")
     private String reviewComment;

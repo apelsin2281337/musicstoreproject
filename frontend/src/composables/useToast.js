@@ -1,6 +1,6 @@
-import { ref } from 'vue'
+import { inject, ref } from 'vue'
 
-const toasts = ref([])
+const toasts = inject('toasts', ref([]))
 let toastId = 0
 
 export function useToast() {

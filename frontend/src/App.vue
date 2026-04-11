@@ -5,14 +5,19 @@
       <router-view />
     </main>
     <AppFooter />
+    <Toast />
   </div>
 </template>
 
 <script setup>
-import { onMounted } from 'vue'
+import { provide, ref, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useLibraryStore } from '@/stores/library'
 import AppHeader from '@/components/AppHeader.vue'
+import Toast from '@/components/Toast.vue'
+
+const toasts = ref([])
+provide('toasts', toasts)
 
 const authStore = useAuthStore()
 const libraryStore = useLibraryStore()

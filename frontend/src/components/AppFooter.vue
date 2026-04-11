@@ -1,0 +1,14 @@
+<template>
+  <footer class="app-footer">
+    <p>Music Store 2026</p>
+  </footer>
+</template>
+
+<style scoped>
+.app-footer {
+  padding: 16px;
+  text-align: center;
+  background: #1a1a1a;
+  color: #666;
+}
+</style>

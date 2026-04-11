@@ -13,10 +13,21 @@ import java.util.Optional;
 @Repository
 public interface AlbumRepository extends JpaRepository<Album, Long> {
 
-    List<Album> findByAlbumArtist_ArtistId(Long artistId);
-    List<Album> findAllByAlbumTitle(String albumTitle);
-    Optional<Album> findByAlbumTitleAndAlbumArtist(String title, Artist artist);
+    @Query(value = "SELECT * FROM albums WHERE artist_id = :artistId", nativeQuery = true)
+    List<Album> findByAlbumArtist_ArtistId(@Param("artistId") Long artistId);
 
+    @Query(value = "SELECT * FROM albums WHERE album_title = :albumTitle", nativeQuery = true)
+    List<Album> findAllByAlbumTitle(@Param("albumTitle") String albumTitle);
+
+    @Query(value = "SELECT * FROM albums WHERE album_title = :title AND artist_id = :artistId", nativeQuery = true)
+    Optional<Album> findByAlbumTitleAndAlbumArtist(@Param("title") String title, @Param("artistId") Long artistId);
+
+    @Query(value = "SELECT * FROM albums ORDER BY album_rating DESC", nativeQuery = true)
     List<Album> findAllByOrderByAlbumRatingDesc();
-    List<Album> findAllByAlbumTitleContainingIgnoreCase(String title);
+
+    @Query(value = "SELECT * FROM albums WHERE LOWER(album_title) LIKE LOWER(CONCAT('%', :title, '%'))", nativeQuery = true)
+    List<Album> findAllByAlbumTitleContainingIgnoreCase(@Param("title") String title);
+
+    @Query(value = "SELECT * FROM albums WHERE album_id = :albumId", nativeQuery = true)
+    Optional<Album> findByAlbumId(@Param("albumId") Long albumId);
 }

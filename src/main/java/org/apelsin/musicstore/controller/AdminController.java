@@ -3,7 +3,6 @@ package org.apelsin.musicstore.controller;
 import lombok.RequiredArgsConstructor;
 import org.apelsin.musicstore.model.*;
 import org.apelsin.musicstore.repository.*;
-import org.apelsin.musicstore.service.UserService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,38 +21,60 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class AdminController {
 
-    private final UserService userService;
     private final UserRepository userRepository;
     private final TrackRepository trackRepository;
-
-    // Добавьте эти финальные поля, чтобы Lombok их внедрил
     private final ArtistRepository artistRepository;
     private final AlbumRepository albumRepository;
     private final AdminActionLogRepository actionLogRepository;
+    private final OrderRepository orderRepository;
+    private final ReviewRepository reviewRepository;
 
     @Value("${upload.path}")
     private String uploadPath;
 
+    private void logAction(User admin, String actionType, String targetEntity, Long targetId, String details) {
+        AdminActionLog log = new AdminActionLog();
+        log.setAdmin(admin);
+        log.setActionType(actionType);
+        log.setTargetEntity(targetEntity);
+        log.setTargetId(targetId);
+        log.setActionDetails(details);
+        actionLogRepository.save(log);
+    }
+
     @PostMapping("/promote/{userId}")
-    public ResponseEntity<?> promote(@PathVariable Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("Пользователь не найден"));
+    public ResponseEntity<?> promote(@PathVariable Long userId, @RequestParam("adminId") Long adminId) {
+        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("Пользователь не найден"));
+        User admin = userRepository.findById(adminId).orElseThrow(() -> new RuntimeException("Админ не найден"));
+        
         if (user.getUserRole() == Role.ADMIN){
             return ResponseEntity.badRequest().body("Пользователь уже является администратором");
         }
-        return ResponseEntity.ok(userService.changeRole(userId, Role.ADMIN));
+        
+        user.setUserRole(Role.ADMIN);
+        userRepository.save(user);
+        
+        logAction(admin, "PROMOTE", "User", userId, "Повышен до администратора: " + user.getUserUsername());
+        
+        return ResponseEntity.ok("Пользователь повышен до администратора");
     }
 
     @PostMapping("/demote/{userId}")
-    public ResponseEntity<?> demote(@PathVariable Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("Пользователь не найден"));
+    public ResponseEntity<?> demote(@PathVariable Long userId, @RequestParam("adminId") Long adminId) {
+        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("Пользователь не найден"));
+        User admin = userRepository.findById(adminId).orElseThrow(() -> new RuntimeException("Админ не найден"));
+        
         if (user.getUserRole() == Role.USER){
             return ResponseEntity.badRequest().body("Пользователь уже является обычным пользователем");
         }
-        return ResponseEntity.ok(userService.changeRole(userId, Role.USER));
+        
+        user.setUserRole(Role.USER);
+        userRepository.save(user);
+        
+        logAction(admin, "DEMOTE", "User", userId, "Понижен до пользователя: " + user.getUserUsername());
+        
+        return ResponseEntity.ok("Администратор понижен до пользователя");
     }
-
 
     @GetMapping("/users")
     public List<User> getAllUsers() {
@@ -64,13 +85,15 @@ public class AdminController {
     public ResponseEntity<?> addArtist(
             @RequestParam("name") String name,
             @RequestParam("description") String desc,
-            @RequestParam("rating") Long rating
+            @RequestParam("rating") Long rating,
+            @RequestParam("adminId") Long adminId
     ){
         try {
+            User admin = userRepository.findById(adminId).orElseThrow(() -> new RuntimeException("Админ не найден"));
+            
             if (name == null || name.isEmpty()) {
                 return ResponseEntity.badRequest().body("Имя артиста не может быть пустым");
             }
-
 
             Artist artist = new Artist();
             artist.setArtistName(name);
@@ -79,14 +102,7 @@ public class AdminController {
 
             Artist savedArtist = artistRepository.save(artist);
 
-
-            AdminActionLog log = new AdminActionLog();
-            log.setActionType("ADD_ARTIST");
-            log.setTargetEntity("ARTIST");
-            log.setTargetId(savedArtist.getArtistId());
-            log.setActionDetails("Добавлен новый артист: " + name);
-            actionLogRepository.save(log);
-
+            logAction(admin, "ADD_ARTIST", "Artist", savedArtist.getArtistId(), "Добавлен артист: " + name);
 
             return ResponseEntity.ok("Артист успешно добавлен! ID: " + savedArtist.getArtistId());
 
@@ -101,23 +117,24 @@ public class AdminController {
             @RequestParam("title") String title,
             @RequestParam("year") Integer year,
             @RequestParam("price") Double price,
-            @RequestParam("artistId") Long artistId
+            @RequestParam("artistId") Long artistId,
+            @RequestParam("adminId") Long adminId
     ) {
         try {
-            // 1. Ищем артиста, которому принадлежит альбом
+            User admin = userRepository.findById(adminId).orElseThrow(() -> new RuntimeException("Админ не найден"));
             Artist artist = artistRepository.findById(artistId)
                     .orElseThrow(() -> new RuntimeException("Артист с таким ID не найден"));
 
-            // 2. Создаем объект альбома
             Album album = new Album();
             album.setAlbumTitle(title);
             album.setAlbumReleaseYear(year);
             album.setAlbumPrice(price);
-            album.setAlbumArtist(artist); // Устанавливаем связь "Многие-к-Одному"
+            album.setAlbumArtist(artist);
             album.setAlbumRating(0L);
 
-            // 3. Сохраняем
             Album savedAlbum = albumRepository.save(album);
+            
+            logAction(admin, "ADD_ALBUM", "Album", savedAlbum.getAlbumId(), "Добавлен альбом: " + title + " (артист: " + artist.getArtistName() + ")");
 
             return ResponseEntity.ok("Альбом '" + title + "' успешно создан! ID: " + savedAlbum.getAlbumId());
 
@@ -127,58 +144,36 @@ public class AdminController {
         }
     }
 
-    @PostMapping("/publishtrack")
-    public ResponseEntity<?> publishTrack(
-            @RequestParam("file") MultipartFile file,
-            @RequestParam("title") String title,
-            @RequestParam("price") Double price,
-            @RequestParam("artist") String artistname,
-            @RequestParam("album") String albumtitle,
-            @RequestParam("admin") String adminname) {
-
-        try {
-            Path root = Paths.get(uploadPath);
-            if (!Files.exists(root)) {
-                Files.createDirectories(root);
-            }
-
-            // 1. Ищем артиста по имени
-            Artist artist = artistRepository.findByArtistName(artistname)
-                    .orElseThrow(() -> new RuntimeException("Артист '" + artistname + "' не найден"));
-
-            // 2. Ищем альбом именно у этого артиста (чтобы не путать дубликаты)
-            Album album = albumRepository.findByAlbumTitleAndAlbumArtist(albumtitle, artist)
-                    .orElseThrow(() -> new RuntimeException("Альбом '" + albumtitle + "' у артиста " + artistname + " не найден"));
-
-            // 3. Ищем админа по юзернейму
-            User admin = userRepository.findByUserUsername(adminname)
-                    .orElseThrow(() -> new RuntimeException("Администратор '" + adminname + "' не найден"));
-
-            // 4. Сохраняем файл
-            String filename = UUID.randomUUID().toString() + "_" + file.getOriginalFilename();
-            Files.copy(file.getInputStream(), root.resolve(filename));
-
-            // 5. Создаем трек
-            Track track = new Track();
-            track.setTrackTitle(title);
-            track.setTrackPrice(price);
-            track.setTrackArtist(artist);
-            track.setTrackAlbum(album);
-            track.setTrackUploadedBy(admin);
-            track.setTrackFilePath("/uploads/music/" + filename);
-
-            trackRepository.save(track);
-
-            return ResponseEntity.ok("Трек успешно загружен и опубликован!");
-
-        } catch (IOException e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Ошибка при сохранении файла: " + e.getMessage());
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body("Ошибка: " + e.getMessage());
+    @DeleteMapping("/albums/{albumId}")
+    public ResponseEntity<?> deleteAlbum(@PathVariable Long albumId, @RequestParam("adminId") Long adminId){
+    Album album = albumRepository.findById(albumId).orElseThrow();
+    User admin = userRepository.findById(adminId).orElseThrow();
+    
+    trackRepository.findByTrackAlbum_AlbumId(albumId).forEach(track -> {
+        track.setTrackAlbum(null);
+        trackRepository.save(track);
+    });
+    
+    reviewRepository.findByReviewAlbum_AlbumId(albumId).forEach(review -> {
+        review.setReviewAlbum(null);
+        reviewRepository.save(review);
+    });
+    
+    userRepository.findAll().forEach(user -> {
+        if (user.getUserPurchasedAlbums() != null && user.getUserPurchasedAlbums().contains(album)) {
+            user.getUserPurchasedAlbums().remove(album);
+            userRepository.save(user);
         }
+    });
+
+    logAction(admin, "DELETE_ALBUM", "Album", albumId, "Удален альбом: " + album.getAlbumTitle());
+
+    albumRepository.deleteById(albumId);
+    return ResponseEntity.ok("Альбом удален");
+
     }
+
+
 
     @PostMapping("/uploadtrack")
     public ResponseEntity<?> uploadTrack(
@@ -190,6 +185,8 @@ public class AdminController {
             @RequestParam("adminId") Long adminId) {
 
         try {
+            User admin = userRepository.findById(adminId).orElseThrow(() -> new RuntimeException("Админ не найден"));
+            
             Path root = Paths.get(uploadPath);
             if (!Files.exists(root)) {
                 Files.createDirectories(root);
@@ -204,9 +201,6 @@ public class AdminController {
                         .orElseThrow(() -> new RuntimeException("Альбом не найден"));
             }
 
-            User admin = userRepository.findById(adminId)
-                    .orElseThrow(() -> new RuntimeException("Админ не найден"));
-
             String filename = UUID.randomUUID().toString() + "_" + file.getOriginalFilename();
             Files.copy(file.getInputStream(), root.resolve(filename));
 
@@ -217,8 +211,13 @@ public class AdminController {
             track.setTrackAlbum(album);
             track.setTrackUploadedBy(admin);
             track.setTrackFilePath("/uploads/music/" + filename);
+            track.setTrackDownloadCount(0L);
 
             Track saved = trackRepository.save(track);
+            
+            logAction(admin, "UPLOAD_TRACK", "Track", saved.getTrackId(), 
+                    "Загружен трек: " + title + " (артист: " + artist.getArtistName() + 
+                    (album != null ? ", альбом: " + album.getAlbumTitle() : "") + ")");
 
             return ResponseEntity.ok("Трек загружен! ID: " + saved.getTrackId());
 
@@ -229,5 +228,78 @@ public class AdminController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body("Ошибка: " + e.getMessage());
         }
+    }
+
+    @DeleteMapping("/tracks/{trackId}/delete")
+    public ResponseEntity<?> deleteTrack(@PathVariable Long trackId, @RequestParam("adminId") Long adminId) {
+        try {
+            Track track = trackRepository.findById(trackId).orElseThrow(() -> new RuntimeException("Track not found"));
+            User admin = userRepository.findById(adminId).orElseThrow(() -> new RuntimeException("Admin not found"));
+            
+            orderRepository.findAll().forEach(order -> {
+                if (order.getOrderItems() != null && order.getOrderItems().contains(track)) {
+                    order.getOrderItems().remove(track);
+                    orderRepository.save(order);
+                }
+            });
+            
+            userRepository.findAll().forEach(user -> {
+                if (user.getUserPurchasedTracks() != null && user.getUserPurchasedTracks().contains(track)) {
+                    user.getUserPurchasedTracks().remove(track);
+                    userRepository.save(user);
+                }
+            });
+            
+            logAction(admin, "DELETE_TRACK", "Track", trackId, "Удален трек: " + track.getTrackTitle());
+            
+            trackRepository.delete(track);
+            return ResponseEntity.ok("Трек удален");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error: " + e.getMessage());
+        }
+    }
+
+    @PutMapping("/tracks/{trackId}")
+    public ResponseEntity<?> updateTrack(@PathVariable Long trackId, 
+            @RequestParam(required = false) String title,
+            @RequestParam(required = false) Double price,
+            @RequestParam Long adminId) {
+        Track track = trackRepository.findById(trackId).orElseThrow();
+        User admin = userRepository.findById(adminId).orElseThrow();
+        
+        StringBuilder changes = new StringBuilder();
+        if (title != null && !title.equals(track.getTrackTitle())) {
+            changes.append("название: ").append(track.getTrackTitle()).append(" -> ").append(title);
+            track.setTrackTitle(title);
+        }
+        if (price != null && !price.equals(track.getTrackPrice())) {
+            if (changes.length() > 0) changes.append(", ");
+            changes.append("цена: ").append(track.getTrackPrice()).append(" -> ").append(price);
+            track.setTrackPrice(price);
+        }
+        
+        trackRepository.save(track);
+        
+        if (changes.length() > 0) {
+            logAction(admin, "UPDATE_TRACK", "Track", trackId, "Обновлен трек ID=" + trackId + ": " + changes);
+        }
+        
+        return ResponseEntity.ok("Трек обновлен");
+    }
+
+    @GetMapping("/tracks/popular")
+    public List<Track> getPopularTracks() {
+        return trackRepository.findAllByOrderByTrackDownloadCountDesc();
+    }
+
+    @GetMapping("/logs")
+    public List<AdminActionLog> getAllLogs() {
+        return actionLogRepository.findAllByOrderByActionTimestampDesc();
+    }
+
+    @GetMapping("/logs/track/{trackId}")
+    public List<AdminActionLog> getTrackLiability(@PathVariable Long trackId) {
+        return actionLogRepository.findByTargetEntityAndTargetId("Track", trackId);
     }
 }
