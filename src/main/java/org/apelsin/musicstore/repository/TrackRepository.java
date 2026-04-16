@@ -1,36 +1,378 @@
 package org.apelsin.musicstore.repository;
 
 import org.apelsin.musicstore.model.Track;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
+import org.apelsin.musicstore.model.Artist;
+import org.apelsin.musicstore.model.Album;
+import org.apelsin.musicstore.model.User;
+import org.apelsin.musicstore.model.Genre;
 import org.springframework.stereotype.Repository;
+
+import javax.sql.DataSource;
+import java.sql.*;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface TrackRepository extends JpaRepository<Track, Long> {
-    @Query(value = "SELECT * FROM tracks WHERE artist_id = :artistId", nativeQuery = true)
-    List<Track> findByTrackArtist_ArtistId(@Param("artistId") Long artistId);
+public class TrackRepository {
 
-    @Query(value = "SELECT * FROM tracks WHERE album_id = :albumId", nativeQuery = true)
-    List<Track> findByTrackAlbum_AlbumId(@Param("albumId") Long albumId);
+    private final DataSource dataSource;
+    private final ArtistRepository artistRepository;
+    private final AlbumRepository albumRepository;
+    private final UserRepository userRepository;
+    private final GenreRepository genreRepository;
 
-    @Query(value = "SELECT * FROM tracks WHERE admin_id = :userId", nativeQuery = true)
-    List<Track> findByTrackUploadedBy_UserId(@Param("userId") Long userId);
+    public TrackRepository(DataSource dataSource, ArtistRepository artistRepository, 
+                          AlbumRepository albumRepository, UserRepository userRepository,
+                          GenreRepository genreRepository) {
+        this.dataSource = dataSource;
+        this.artistRepository = artistRepository;
+        this.albumRepository = albumRepository;
+        this.userRepository = userRepository;
+        this.genreRepository = genreRepository;
+    }
 
-    @Query(value = "SELECT * FROM tracks ORDER BY track_download_count DESC", nativeQuery = true)
-    List<Track> findAllByOrderByTrackDownloadCountDesc();
+    private Track mapResultSetToTrack(ResultSet rs) throws SQLException {
+        Track track = new Track();
+        track.setTrackId(rs.getLong("track_id"));
+        track.setTrackTitle(rs.getString("track_title"));
+        track.setTrackPrice(rs.getDouble("track_price"));
+        track.setTrackFilePath(rs.getString("track_file_path"));
+        track.setTrackDownloadCount(rs.getLong("track_download_count"));
 
-    @Query(value = "SELECT t.* FROM tracks t JOIN trackGenres tg ON t.track_id = tg.track_id WHERE tg.genre_id = :genreId", nativeQuery = true)
-    List<Track> findByTrackGenres_GenreId(@Param("genreId") Long genreId);
+        Long artistId = rs.getLong("artist_id");
+        artistRepository.findById(artistId).ifPresent(track::setTrackArtist);
 
-    @Query(value = "SELECT * FROM tracks WHERE track_title = :trackTitle", nativeQuery = true)
-    List<Track> findAllByTrackTitle(@Param("trackTitle") String trackTitle);
+        Long albumId = rs.getLong("album_id");
+        if (!rs.wasNull()) {
+            albumRepository.findById(albumId).ifPresent(track::setTrackAlbum);
+        }
 
-    @Query(value = "SELECT * FROM tracks WHERE LOWER(track_title) LIKE LOWER(CONCAT('%', :title, '%'))", nativeQuery = true)
-    List<Track> findAllByTrackTitleContainingIgnoreCase(@Param("title") String title);
+        Long adminId = rs.getLong("admin_id");
+        if (!rs.wasNull()) {
+            userRepository.findById(adminId).ifPresent(track::setTrackUploadedBy);
+        }
 
-    @Query(value = "SELECT * FROM tracks WHERE track_id = :trackId", nativeQuery = true)
-    Optional<Track> findByTrackId(@Param("trackId") Long trackId);
+        return track;
+    }
+
+    public Track save(Track track) {
+        String sql = "INSERT INTO tracks (track_title, track_price, track_file_path, track_download_count, artist_id, album_id, admin_id) VALUES (?, ?, ?, ?, ?, ?, ?)";
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+
+            ps.setString(1, track.getTrackTitle());
+            ps.setObject(2, track.getTrackPrice(), Types.DOUBLE);
+            ps.setString(3, track.getTrackFilePath());
+            ps.setObject(4, track.getTrackDownloadCount(), Types.BIGINT);
+            ps.setLong(5, track.getTrackArtist().getArtistId());
+            
+            if (track.getTrackAlbum() != null) {
+                ps.setLong(6, track.getTrackAlbum().getAlbumId());
+            } else {
+                ps.setNull(6, Types.BIGINT);
+            }
+            
+            if (track.getTrackUploadedBy() != null) {
+                ps.setLong(7, track.getTrackUploadedBy().getUserId());
+            } else {
+                ps.setNull(7, Types.BIGINT);
+            }
+
+            ps.executeUpdate();
+
+            try (ResultSet rs = ps.getGeneratedKeys()) {
+                if (rs.next()) {
+                    track.setTrackId(rs.getLong(1));
+                }
+            }
+            return track;
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to save track", e);
+        }
+    }
+
+    public void deleteById(Long id) {
+        String sql = "DELETE FROM tracks WHERE track_id = ?";
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setLong(1, id);
+            ps.executeUpdate();
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to delete track", e);
+        }
+    }
+
+    public void incrementDownloadCount(Long trackId) {
+        String sql = "UPDATE tracks SET track_download_count = track_download_count + 1 WHERE track_id = ?";
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setLong(1, trackId);
+            ps.executeUpdate();
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to increment download count", e);
+        }
+    }
+
+    public Optional<Track> findById(Long id) {
+        String sql = "SELECT * FROM tracks WHERE track_id = ?";
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setLong(1, id);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return Optional.of(mapResultSetToTrack(rs));
+                }
+            }
+            return Optional.empty();
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to find track by id", e);
+        }
+    }
+
+    public List<Track> findAll() {
+        String sql = "SELECT * FROM tracks";
+        List<Track> tracks = new ArrayList<>();
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+
+            while (rs.next()) {
+                tracks.add(mapResultSetToTrack(rs));
+            }
+            return tracks;
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to find all tracks", e);
+        }
+    }
+
+    public List<Track> findByTrackArtist_ArtistId(Long artistId) {
+        String sql = "SELECT * FROM tracks WHERE artist_id = ?";
+        List<Track> tracks = new ArrayList<>();
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setLong(1, artistId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    tracks.add(mapResultSetToTrack(rs));
+                }
+            }
+            return tracks;
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to find tracks by artist id", e);
+        }
+    }
+
+    public List<Track> findByTrackAlbum_AlbumId(Long albumId) {
+        String sql = "SELECT * FROM tracks WHERE album_id = ?";
+        List<Track> tracks = new ArrayList<>();
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setLong(1, albumId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    tracks.add(mapResultSetToTrack(rs));
+                }
+            }
+            return tracks;
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to find tracks by album id", e);
+        }
+    }
+
+    public List<Track> findByTrackUploadedBy_UserId(Long userId) {
+        String sql = "SELECT * FROM tracks WHERE admin_id = ?";
+        List<Track> tracks = new ArrayList<>();
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setLong(1, userId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    tracks.add(mapResultSetToTrack(rs));
+                }
+            }
+            return tracks;
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to find tracks by user id", e);
+        }
+    }
+
+    public List<Track> findAllByOrderByTrackDownloadCountDesc() {
+        String sql = "SELECT * FROM tracks ORDER BY track_download_count DESC";
+        List<Track> tracks = new ArrayList<>();
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+
+            while (rs.next()) {
+                tracks.add(mapResultSetToTrack(rs));
+            }
+            return tracks;
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to find tracks by download count", e);
+        }
+    }
+
+    public List<Track> findByTrackGenres_GenreId(Long genreId) {
+        String sql = "SELECT t.* FROM tracks t JOIN trackGenres tg ON t.track_id = tg.track_id WHERE tg.genre_id = ?";
+        List<Track> tracks = new ArrayList<>();
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setLong(1, genreId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    tracks.add(mapResultSetToTrack(rs));
+                }
+            }
+            return tracks;
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to find tracks by genre id", e);
+        }
+    }
+
+    public List<Track> findAllByTrackTitle(String trackTitle) {
+        String sql = "SELECT * FROM tracks WHERE track_title = ?";
+        List<Track> tracks = new ArrayList<>();
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, trackTitle);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    tracks.add(mapResultSetToTrack(rs));
+                }
+            }
+            return tracks;
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to find tracks by title", e);
+        }
+    }
+
+    public List<Track> findAllByTrackTitleContainingIgnoreCase(String title) {
+        String sql = "SELECT * FROM tracks WHERE LOWER(track_title) LIKE LOWER(CONCAT('%', ?, '%'))";
+        List<Track> tracks = new ArrayList<>();
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, title);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    tracks.add(mapResultSetToTrack(rs));
+                }
+            }
+            return tracks;
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to find tracks by title containing", e);
+        }
+    }
+
+    public Optional<Track> findByTrackId(Long trackId) {
+        return findById(trackId);
+    }
+
+    public Track update(Track track) {
+        String sql = "UPDATE tracks SET track_title = ?, track_price = ?, track_file_path = ?, track_download_count = ?, artist_id = ?, album_id = ?, admin_id = ? WHERE track_id = ?";
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, track.getTrackTitle());
+            ps.setObject(2, track.getTrackPrice(), Types.DOUBLE);
+            ps.setString(3, track.getTrackFilePath());
+            ps.setObject(4, track.getTrackDownloadCount(), Types.BIGINT);
+            ps.setLong(5, track.getTrackArtist().getArtistId());
+
+            if (track.getTrackAlbum() != null) {
+                ps.setLong(6, track.getTrackAlbum().getAlbumId());
+            } else {
+                ps.setNull(6, Types.BIGINT);
+            }
+
+            if (track.getTrackUploadedBy() != null) {
+                ps.setLong(7, track.getTrackUploadedBy().getUserId());
+            } else {
+                ps.setNull(7, Types.BIGINT);
+            }
+
+            ps.setLong(8, track.getTrackId());
+            ps.executeUpdate();
+            return track;
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to update track", e);
+        }
+    }
+
+    public List<Track> findAllById(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return new ArrayList<>();
+        }
+        
+        StringBuilder sql = new StringBuilder("SELECT * FROM tracks WHERE track_id IN (");
+        for (int i = 0; i < ids.size(); i++) {
+            sql.append("?");
+            if (i < ids.size() - 1) {
+                sql.append(",");
+            }
+        }
+        sql.append(")");
+        
+        List<Track> tracks = new ArrayList<>();
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+            
+            for (int i = 0; i < ids.size(); i++) {
+                ps.setLong(i + 1, ids.get(i));
+            }
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    tracks.add(mapResultSetToTrack(rs));
+                }
+            }
+            return tracks;
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to find tracks by ids", e);
+        }
+    }
 }

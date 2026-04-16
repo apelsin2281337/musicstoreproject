@@ -9,10 +9,20 @@
 
     <div v-else class="cart-layout">
       <div class="items">
+        <div v-for="item in cartStore.albums" :key="item.albumId" class="item album-item">
+          <div class="item-info">
+            <h4>{{ item.albumTitle }}</h4>
+            <p>{{ item.albumArtist?.artistName }}</p>
+            <span class="item-type">Альбом</span>
+          </div>
+          <span class="price">{{ formatPrice(item.albumPrice) }}</span>
+          <button class="btn btn-link" @click="removeAlbum(item.albumId)">Удалить</button>
+        </div>
         <div v-for="item in cartStore.items" :key="item.trackId" class="item">
           <div class="item-info">
             <h4>{{ item.trackTitle }}</h4>
             <p>{{ item.trackArtist?.artistName }}</p>
+            <span class="item-type">Трек</span>
           </div>
           <span class="price">{{ formatPrice(item.trackPrice) }}</span>
           <button class="btn btn-link" @click="removeItem(item.trackId)">Удалить</button>
@@ -43,6 +53,7 @@ const toast = useToast()
 
 function formatPrice(price) { return price ? `$${price.toFixed(2)}` : 'Бесплатно' }
 function removeItem(id) { cartStore.removeItem(id) }
+function removeAlbum(id) { cartStore.removeAlbum(id) }
 
 async function checkout() {
   try {

@@ -16,7 +16,13 @@ export const useLibraryStore = defineStore('library', () => {
     loading.value = true
     error.value = null
     try {
-      tracks.value = await userApi.getLibrary(authStore.userId)
+      const data = await userApi.getLibrary(authStore.userId)
+      const seen = new Set()
+      tracks.value = data.filter(t => {
+        if (seen.has(t.trackId)) return false
+        seen.add(t.trackId)
+        return true
+      })
     } catch (e) {
       error.value = e.message
     } finally {

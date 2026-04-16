@@ -44,12 +44,14 @@ async function createPlaylist() {
   toast.success('Создан')
   showCreateModal.value = false
   newPlaylistTitle.value = ''
+  await libraryStore.fetchPlaylists()
 }
 
 async function confirmDelete(p) {
   if (confirm(`Удалить "${p.playlistTitle}"?`)) {
     await libraryStore.deletePlaylist(p.playlistId)
     toast.success('Удален')
+    await libraryStore.fetchPlaylists()
   }
 }
 

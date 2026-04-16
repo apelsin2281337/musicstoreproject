@@ -5,15 +5,41 @@ import { publicApi } from '@/services/api'
 export const useMusicStore = defineStore('music', () => {
   const artists = ref([])
   const albums = ref([])
+  const genres = ref([])
   const popularTracks = ref([])
   const currentArtist = ref(null)
   const currentAlbum = ref(null)
   const artistTracks = ref([])
   const artistAlbums = ref([])
   const albumTracks = ref([])
+  const genreTracks = ref([])
 
   const loading = ref(false)
   const error = ref(null)
+
+  async function fetchGenres() {
+    loading.value = true
+    error.value = null
+    try {
+      genres.value = await publicApi.getGenres()
+    } catch (e) {
+      error.value = e.message
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function fetchGenreTracks(genreId) {
+    loading.value = true
+    error.value = null
+    try {
+      genreTracks.value = await publicApi.getGenreTracks(genreId)
+    } catch (e) {
+      error.value = e.message
+    } finally {
+      loading.value = false
+    }
+  }
 
   async function fetchArtists(params = {}) {
     loading.value = true
@@ -89,12 +115,14 @@ export const useMusicStore = defineStore('music', () => {
   return {
     artists,
     albums,
+    genres,
     popularTracks,
     currentArtist,
     currentAlbum,
     artistTracks,
     artistAlbums,
     albumTracks,
+    genreTracks,
     loading,
     error,
     fetchArtists,
@@ -102,6 +130,8 @@ export const useMusicStore = defineStore('music', () => {
     fetchAlbums,
     fetchAlbum,
     fetchPopularTracks,
+    fetchGenres,
+    fetchGenreTracks,
     clearCurrent
   }
 })

@@ -14,6 +14,10 @@ java {
     }
 }
 
+compileJava {
+    options.compilerArgs.add('-parameters')
+}
+
 // Фиксируем имя, чтобы Dockerfile всегда его находил
 bootJar {
     archiveFileName = 'app.jar'

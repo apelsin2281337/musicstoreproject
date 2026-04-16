@@ -22,6 +22,6 @@ public class Artist {
     private Long artistRating = 0L;
 
     @OneToMany(mappedBy = "albumArtist", cascade = CascadeType.ALL)
-    @JsonIgnoreProperties("albumArtist")
+    @JsonIgnoreProperties({"albumArtist", "albumTracks"})
     private List<Album> artistAlbums;
 }

@@ -21,10 +21,10 @@ public class Album {
 
     @ManyToOne
     @JoinColumn(name = "artist_id")
-    @JsonIgnoreProperties("artistAlbums")
+    @JsonIgnoreProperties({"artistAlbums", "artistDescription", "artistTracks", "artistRating"})
     private Artist albumArtist;
 
     @OneToMany(mappedBy = "trackAlbum", cascade = CascadeType.ALL)
-    @JsonIgnoreProperties("trackAlbum")
+    @JsonIgnoreProperties({"trackAlbum", "trackArtist", "trackGenres", "trackPrice", "trackFilePath", "trackDownloadCount", "trackUploadedBy"})
     private List<Track> albumTracks;
 }

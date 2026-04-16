@@ -28,7 +28,7 @@ public class User {
             joinColumns = @JoinColumn(name = "user_id"),
             inverseJoinColumns = @JoinColumn(name = "track_id")
     )
-    @JsonIgnoreProperties({"trackArtist", "trackAlbum", "trackGenres", "trackUploadedBy", "trackFilePath"})
+    @JsonIgnoreProperties({"trackArtist", "trackAlbum", "trackGenres", "trackUploadedBy", "trackFilePath", "trackPrice", "trackDownloadCount"})
     private List<Track> userPurchasedTracks;
 
     @ManyToMany
@@ -37,14 +37,14 @@ public class User {
             joinColumns = @JoinColumn(name = "user_id"),
             inverseJoinColumns = @JoinColumn(name = "album_id")
     )
-    @JsonIgnoreProperties({"albumArtist", "albumTracks"})
+    @JsonIgnoreProperties({"albumArtist", "albumTracks", "albumPrice", "albumRating", "albumReleaseYear"})
     private List<Album> userPurchasedAlbums;
 
     @OneToMany(mappedBy = "trackUploadedBy")
-    @JsonIgnoreProperties({"trackArtist", "trackAlbum", "trackGenres", "trackUploadedBy", "trackFilePath"})
+    @JsonIgnoreProperties({"trackArtist", "trackAlbum", "trackGenres", "trackUploadedBy", "trackFilePath", "trackPrice", "trackDownloadCount"})
     private List<Track> userUploadedTracks;
 
     @OneToMany(mappedBy = "playlistOwner")
-    @JsonIgnoreProperties({"playlistOwner"})
+    @JsonIgnoreProperties({"playlistOwner", "playlistTracks"})
     private List<Playlist> userPlaylists;
 }

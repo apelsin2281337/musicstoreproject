@@ -1,5 +1,6 @@
 package org.apelsin.musicstore.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.util.List;
@@ -16,6 +17,7 @@ public class Playlist {
 
     @ManyToOne
     @JoinColumn(name = "user_id")
+    @JsonIgnoreProperties({"userPurchasedTracks", "userPurchasedAlbums", "userPlaylists", "userUploadedTracks", "userPassword", "userRole"})
     private User playlistOwner;
 
     @ManyToMany
@@ -24,5 +26,6 @@ public class Playlist {
             joinColumns = @JoinColumn(name = "playlist_id"),
             inverseJoinColumns = @JoinColumn(name = "track_id")
     )
+    @JsonIgnoreProperties({"trackArtist", "trackAlbum", "trackGenres", "trackUploadedBy", "trackFilePath", "trackPrice", "trackDownloadCount"})
     private List<Track> playlistTracks;
 }

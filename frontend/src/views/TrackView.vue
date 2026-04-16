@@ -30,6 +30,7 @@
         <div class="license-card">
           <p><strong>Контракт:</strong> {{ license.licenseContractNumber }}</p>
           <p><strong>Владелец:</strong> {{ license.licenseOwnerName }}</p>
+          <p><strong>Опубликован:</strong> {{ license.uploader}}</p>
           <p><strong>Действует:</strong> {{ formatDate(license.licenseStartDate) }} - {{ formatDate(license.licenseExpirationDate) }}</p>
         </div>
       </section>
@@ -99,8 +100,9 @@ async function buy() {
   try {
     await userApi.buyTracks(authStore.userId, [track.value.trackId])
     toast.success('Трек куплен!')
-    libraryStore.fetchLibrary()
-    track.value = await loadTrack()
+    await libraryStore.fetchLibrary()
+    await loadTrack()
+    loadReviews()
   } catch (e) {
     toast.error('Ошибка: ' + e.message)
   }
@@ -109,7 +111,7 @@ async function submitReview() {
   try {
     await reviewApi.addReview(authStore.userId, track.value.trackId, null, newRating.value, newComment.value)
     toast.success('Отзыв отправлен!')
-    reviews.value = await reviewApi.getTrackReviews(track.value.trackId)
+    await loadReviews()
     newComment.value = ''
   } catch (e) {
     toast.error('Ошибка: ' + e.message)

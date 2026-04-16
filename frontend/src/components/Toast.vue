@@ -14,7 +14,7 @@ import { inject } from 'vue'
 const toasts = inject('toasts')
 </script>
 
-<style scoped>
+<style>
 .toast-container {
   position: fixed;
   bottom: 16px;

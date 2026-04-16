@@ -10,6 +10,7 @@
         <button :class="{ active: activeTab === 'tracks' }" @click="activeTab = 'tracks'">Треки</button>
         <button :class="{ active: activeTab === 'artists' }" @click="activeTab = 'artists'">Артисты</button>
         <button :class="{ active: activeTab === 'albums' }" @click="activeTab = 'albums'">Альбомы</button>
+        <button :class="{ active: activeTab === 'genres' }" @click="activeTab = 'genres'">Жанры</button>
       </div>
     </div>
 
@@ -22,9 +23,17 @@
       <div v-if="filteredArtists.length === 0" class="empty-state"><p>Не найдено</p></div>
       <div v-else class="grid"><ArtistCard v-for="a in filteredArtists" :key="a.artistId" :artist="a" /></div>
     </div>
-    <div v-else>
+    <div v-else-if="activeTab === 'albums'">
       <div v-if="filteredAlbums.length === 0" class="empty-state"><p>Не найдено</p></div>
       <div v-else class="grid"><AlbumCard v-for="a in filteredAlbums" :key="a.albumId" :album="a" /></div>
+    </div>
+    <div v-else-if="activeTab === 'genres'">
+      <div v-if="musicStore.genres.length === 0" class="empty-state"><p>Жанры не найдены</p></div>
+      <div v-else class="grid">
+        <router-link v-for="g in musicStore.genres" :key="g.genreId" :to="`/genre/${g.genreId}`" class="genre-card">
+          <h4>{{ g.genreName }}</h4>
+        </router-link>
+      </div>
     </div>
   </div>
 </template>
@@ -59,7 +68,7 @@ const filteredAlbums = computed(() => {
 })
 
 onMounted(async () => {
-  await Promise.all([musicStore.fetchPopularTracks(), musicStore.fetchArtists(), musicStore.fetchAlbums()])
+  await Promise.all([musicStore.fetchPopularTracks(), musicStore.fetchArtists(), musicStore.fetchAlbums(), musicStore.fetchGenres()])
 })
 
 watch(activeTab, () => { searchQuery.value = '' })
@@ -73,4 +82,7 @@ watch(activeTab, () => { searchQuery.value = '' })
 .tabs button:hover:not(.active) { background: #d4d4d4; }
 .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
 @media (min-width: 640px) { .grid { grid-template-columns: repeat(4, 1fr); } }
+.genre-card { background: white; padding: 16px; border: 1px solid #e5e5e5; border-radius: 6px; text-decoration: none; color: inherit; }
+.genre-card:hover { border-color: #999; }
+.genre-card h4 { font-size: 14px; margin: 0; }
 </style>

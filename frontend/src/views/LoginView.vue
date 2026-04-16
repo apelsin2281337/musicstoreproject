@@ -38,6 +38,7 @@ async function handleLogin() {
   if (success) {
     toast.success('Успешно!')
     router.push(route.query.redirect || '/')
+    
   }
 }
 </script>

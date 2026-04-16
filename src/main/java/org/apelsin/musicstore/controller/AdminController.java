@@ -13,7 +13,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @RestController
@@ -28,6 +30,8 @@ public class AdminController {
     private final AdminActionLogRepository actionLogRepository;
     private final OrderRepository orderRepository;
     private final ReviewRepository reviewRepository;
+    private final LicenseRepository licenseRepository;
+    private final GenreRepository genreRepository;
 
     @Value("${upload.path}")
     private String uploadPath;
@@ -52,7 +56,7 @@ public class AdminController {
         }
         
         user.setUserRole(Role.ADMIN);
-        userRepository.save(user);
+        userRepository.update(user);
         
         logAction(admin, "PROMOTE", "User", userId, "Повышен до администратора: " + user.getUserUsername());
         
@@ -69,7 +73,7 @@ public class AdminController {
         }
         
         user.setUserRole(Role.USER);
-        userRepository.save(user);
+        userRepository.update(user);
         
         logAction(admin, "DEMOTE", "User", userId, "Понижен до пользователя: " + user.getUserUsername());
         
@@ -151,18 +155,18 @@ public class AdminController {
     
     trackRepository.findByTrackAlbum_AlbumId(albumId).forEach(track -> {
         track.setTrackAlbum(null);
-        trackRepository.save(track);
+        trackRepository.update(track);
     });
     
     reviewRepository.findByReviewAlbum_AlbumId(albumId).forEach(review -> {
         review.setReviewAlbum(null);
-        reviewRepository.save(review);
+        reviewRepository.update(review);
     });
     
     userRepository.findAll().forEach(user -> {
         if (user.getUserPurchasedAlbums() != null && user.getUserPurchasedAlbums().contains(album)) {
             user.getUserPurchasedAlbums().remove(album);
-            userRepository.save(user);
+            userRepository.update(user);
         }
     });
 
@@ -182,7 +186,11 @@ public class AdminController {
             @RequestParam("price") Double price,
             @RequestParam("artistId") Long artistId,
             @RequestParam(value = "albumId", required = false) Long albumId,
-            @RequestParam("adminId") Long adminId) {
+            @RequestParam("adminId") Long adminId,
+            @RequestParam("licenseTerms") String terms,
+            @RequestParam(value = "genreIds", required = false) List<Long> genreIds
+    )
+        {
 
         try {
             User admin = userRepository.findById(adminId).orElseThrow(() -> new RuntimeException("Админ не найден"));
@@ -213,8 +221,26 @@ public class AdminController {
             track.setTrackFilePath("/uploads/music/" + filename);
             track.setTrackDownloadCount(0L);
 
+            if (genreIds != null && !genreIds.isEmpty()) {
+                List<Genre> genres = new ArrayList<>();
+                for (Long gid : genreIds) {
+                    genreRepository.findById(gid).ifPresent(genres::add);
+                }
+                track.setTrackGenres(genres);
+            }
+
             Track saved = trackRepository.save(track);
-            
+
+            License license = new License();
+            license.setLicenseTrack(saved);
+            license.setLicenseTerms(terms);
+            license.setLicenseContractNumber("CONTRACT-" + saved.getTrackId());
+            license.setLicenseOwnerName(artist.getArtistName());
+            license.setLicenseStartDate(java.time.LocalDate.now());
+            license.setLicenseExpirationDate(java.time.LocalDate.now().plusYears(1));
+            license.setUploader(admin.getUserUsername());
+            licenseRepository.save(license);
+
             logAction(admin, "UPLOAD_TRACK", "Track", saved.getTrackId(), 
                     "Загружен трек: " + title + " (артист: " + artist.getArtistName() + 
                     (album != null ? ", альбом: " + album.getAlbumTitle() : "") + ")");
@@ -239,53 +265,25 @@ public class AdminController {
             orderRepository.findAll().forEach(order -> {
                 if (order.getOrderItems() != null && order.getOrderItems().contains(track)) {
                     order.getOrderItems().remove(track);
-                    orderRepository.save(order);
+                    orderRepository.update(order);
                 }
             });
             
             userRepository.findAll().forEach(user -> {
                 if (user.getUserPurchasedTracks() != null && user.getUserPurchasedTracks().contains(track)) {
                     user.getUserPurchasedTracks().remove(track);
-                    userRepository.save(user);
+                    userRepository.update(user);
                 }
             });
             
             logAction(admin, "DELETE_TRACK", "Track", trackId, "Удален трек: " + track.getTrackTitle());
             
-            trackRepository.delete(track);
+            trackRepository.deleteById(trackId);
             return ResponseEntity.ok("Трек удален");
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error: " + e.getMessage());
         }
-    }
-
-    @PutMapping("/tracks/{trackId}")
-    public ResponseEntity<?> updateTrack(@PathVariable Long trackId, 
-            @RequestParam(required = false) String title,
-            @RequestParam(required = false) Double price,
-            @RequestParam Long adminId) {
-        Track track = trackRepository.findById(trackId).orElseThrow();
-        User admin = userRepository.findById(adminId).orElseThrow();
-        
-        StringBuilder changes = new StringBuilder();
-        if (title != null && !title.equals(track.getTrackTitle())) {
-            changes.append("название: ").append(track.getTrackTitle()).append(" -> ").append(title);
-            track.setTrackTitle(title);
-        }
-        if (price != null && !price.equals(track.getTrackPrice())) {
-            if (changes.length() > 0) changes.append(", ");
-            changes.append("цена: ").append(track.getTrackPrice()).append(" -> ").append(price);
-            track.setTrackPrice(price);
-        }
-        
-        trackRepository.save(track);
-        
-        if (changes.length() > 0) {
-            logAction(admin, "UPDATE_TRACK", "Track", trackId, "Обновлен трек ID=" + trackId + ": " + changes);
-        }
-        
-        return ResponseEntity.ok("Трек обновлен");
     }
 
     @GetMapping("/tracks/popular")
@@ -301,5 +299,210 @@ public class AdminController {
     @GetMapping("/logs/track/{trackId}")
     public List<AdminActionLog> getTrackLiability(@PathVariable Long trackId) {
         return actionLogRepository.findByTargetEntityAndTargetId("Track", trackId);
+    }
+
+    @PostMapping("/genres")
+    public ResponseEntity<?> addGenre(@RequestParam("name") String name, @RequestParam("adminId") Long adminId) {
+        try {
+            User admin = userRepository.findById(adminId).orElseThrow(() -> new RuntimeException("Админ не найден"));
+            
+            if (name == null || name.isEmpty()) {
+                return ResponseEntity.badRequest().body("Название жанра не может быть пустым");
+            }
+            
+            if (genreRepository.findByGenreName(name).isPresent()) {
+                return ResponseEntity.badRequest().body("Жанр уже существует");
+            }
+            
+            Genre genre = new Genre();
+            genre.setGenreName(name);
+            Genre saved = genreRepository.save(genre);
+            
+            logAction(admin, "ADD_GENRE", "Genre", saved.getGenreId(), "Добавлен жанр: " + name);
+            
+            return ResponseEntity.ok("Жанр добавлен! ID: " + saved.getGenreId());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Ошибка: " + e.getMessage());
+        }
+    }
+
+    @DeleteMapping("/genres/{genreId}")
+    public ResponseEntity<?> deleteGenre(@PathVariable Long genreId, @RequestParam("adminId") Long adminId) {
+        try {
+            User admin = userRepository.findById(adminId).orElseThrow(() -> new RuntimeException("Админ не найден"));
+            Genre genre = genreRepository.findById(genreId).orElseThrow(() -> new RuntimeException("Жанр не найден"));
+            
+            logAction(admin, "DELETE_GENRE", "Genre", genreId, "Удален жанр: " + genre.getGenreName());
+            
+            genreRepository.deleteById(genreId);
+            return ResponseEntity.ok("Жанр удален");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Ошибка: " + e.getMessage());
+        }
+    }
+
+    @PutMapping("/artists/{artistId}")
+    public ResponseEntity<?> updateArtist(@PathVariable Long artistId,
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String description,
+            @RequestParam(required = false) Long rating,
+            @RequestParam Long adminId) {
+        try {
+            User admin = userRepository.findById(adminId).orElseThrow(() -> new RuntimeException("Админ не найден"));
+            Artist artist = artistRepository.findById(artistId).orElseThrow(() -> new RuntimeException("Артист не найден"));
+            
+            StringBuilder changes = new StringBuilder();
+            if (name != null && !name.equals(artist.getArtistName())) {
+                changes.append("название: ").append(artist.getArtistName()).append(" -> ").append(name);
+                artist.setArtistName(name);
+            }
+            if (description != null && !description.equals(artist.getArtistDescription())) {
+                if (changes.length() > 0) changes.append(", ");
+                changes.append("описание: ").append(artist.getArtistDescription()).append(" -> ").append(description);
+                artist.setArtistDescription(description);
+            }
+            if (rating != null && !rating.equals(artist.getArtistRating())) {
+                if (changes.length() > 0) changes.append(", ");
+                changes.append("рейтинг: ").append(artist.getArtistRating()).append(" -> ").append(rating);
+                artist.setArtistRating(rating);
+            }
+            
+            artistRepository.update(artist);
+            
+            if (changes.length() > 0) {
+                logAction(admin, "UPDATE_ARTIST", "Artist", artistId, "Обновлен артист ID=" + artistId + ": " + changes);
+            }
+            
+            return ResponseEntity.ok("Артист обновлен");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Ошибка: " + e.getMessage());
+        }
+    }
+
+    @PutMapping("/albums/{albumId}")
+    public ResponseEntity<?> updateAlbum(@PathVariable Long albumId,
+            @RequestParam(required = false) String title,
+            @RequestParam(required = false) Integer year,
+            @RequestParam(required = false) Double price,
+            @RequestParam(required = false) Long artistId,
+            @RequestParam Long adminId) {
+        try {
+            User admin = userRepository.findById(adminId).orElseThrow(() -> new RuntimeException("Админ не найден"));
+            Album album = albumRepository.findById(albumId).orElseThrow(() -> new RuntimeException("Альбом не найден"));
+            
+            StringBuilder changes = new StringBuilder();
+            if (title != null && !title.equals(album.getAlbumTitle())) {
+                changes.append("название: ").append(album.getAlbumTitle()).append(" -> ").append(title);
+                album.setAlbumTitle(title);
+            }
+            if (year != null && !year.equals(album.getAlbumReleaseYear())) {
+                if (changes.length() > 0) changes.append(", ");
+                changes.append("год: ").append(album.getAlbumReleaseYear()).append(" -> ").append(year);
+                album.setAlbumReleaseYear(year);
+            }
+            if (price != null && !price.equals(album.getAlbumPrice())) {
+                if (changes.length() > 0) changes.append(", ");
+                changes.append("цена: ").append(album.getAlbumPrice()).append(" -> ").append(price);
+                album.setAlbumPrice(price);
+            }
+            if (artistId != null && (album.getAlbumArtist() == null || !artistId.equals(album.getAlbumArtist().getArtistId()))) {
+                Artist artist = artistRepository.findById(artistId).orElseThrow(() -> new RuntimeException("Артист не найден"));
+                if (changes.length() > 0) changes.append(", ");
+                changes.append("артист: ").append(album.getAlbumArtist() != null ? album.getAlbumArtist().getArtistName() : "null").append(" -> ").append(artist.getArtistName());
+                album.setAlbumArtist(artist);
+            }
+            
+            albumRepository.update(album);
+            
+            if (changes.length() > 0) {
+                logAction(admin, "UPDATE_ALBUM", "Album", albumId, "Обновлен альбом ID=" + albumId + ": " + changes);
+            }
+            
+            return ResponseEntity.ok("Альбом обновлен");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Ошибка: " + e.getMessage());
+        }
+    }
+
+    @PutMapping("/tracks/{trackId}")
+    public ResponseEntity<?> updateTrack(@PathVariable Long trackId, 
+            @RequestParam(required = false) String title,
+            @RequestParam(required = false) Double price,
+            @RequestParam(required = false) Long artistId,
+            @RequestParam(required = false) Long albumId,
+            @RequestParam(required = false) List<Long> genreIds,
+            @RequestParam Long adminId) {
+        try {
+            User admin = userRepository.findById(adminId).orElseThrow(() -> new RuntimeException("Админ не найден"));
+            Track track = trackRepository.findById(trackId).orElseThrow(() -> new RuntimeException("Трек не найден"));
+            
+            StringBuilder changes = new StringBuilder();
+            if (title != null && !title.equals(track.getTrackTitle())) {
+                changes.append("название: ").append(track.getTrackTitle()).append(" -> ").append(title);
+                track.setTrackTitle(title);
+            }
+            if (price != null && !price.equals(track.getTrackPrice())) {
+                if (!changes.isEmpty()) changes.append(", ");
+                changes.append("цена: ").append(track.getTrackPrice()).append(" -> ").append(price);
+                track.setTrackPrice(price);
+            }
+            if (artistId != null && (track.getTrackArtist() == null || !artistId.equals(track.getTrackArtist().getArtistId()))) {
+                Artist artist = artistRepository.findById(artistId).orElseThrow(() -> new RuntimeException("Артист не найден"));
+                if (!changes.isEmpty()) changes.append(", ");
+                changes.append("артист: ").append(track.getTrackArtist() != null ? track.getTrackArtist().getArtistName() : "null").append(" -> ").append(artist.getArtistName());
+                track.setTrackArtist(artist);
+            }
+            if (albumId != null && (track.getTrackAlbum() == null || !albumId.equals(track.getTrackAlbum().getAlbumId()))) {
+                Album album = albumRepository.findById(albumId).orElse(null);
+                if (!changes.isEmpty()) changes.append(", ");
+                changes.append("альбом: ").append(track.getTrackAlbum() != null ? track.getTrackAlbum().getAlbumTitle() : "null").append(" -> ").append(album != null ? album.getAlbumTitle() : "null");
+                track.setTrackAlbum(album);
+            }
+            if (genreIds != null) {
+                List<Genre> genres = new ArrayList<>();
+                for (Long gid : genreIds) {
+                    genreRepository.findById(gid).ifPresent(genres::add);
+                }
+                if (!changes.isEmpty()) changes.append(", ");
+                changes.append("жанры обновлены");
+                track.setTrackGenres(genres);
+            }
+            
+            trackRepository.update(track);
+            
+            if (!changes.isEmpty()) {
+                logAction(admin, "UPDATE_TRACK", "Track", trackId, "Обновлен трек ID=" + trackId + ": " + changes);
+            }
+            
+            return ResponseEntity.ok("Трек обновлен");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Ошибка: " + e.getMessage());
+        }
+    }
+
+    @PutMapping("/genres/{genreId}")
+    public ResponseEntity<?> updateGenre(@PathVariable Long genreId,
+            @RequestParam(required = false) String name,
+            @RequestParam Long adminId) {
+        try {
+            User admin = userRepository.findById(adminId).orElseThrow(() -> new RuntimeException("Админ не найден"));
+            Genre genre = genreRepository.findById(genreId).orElseThrow(() -> new RuntimeException("Жанр не найден"));
+            
+            StringBuilder changes = new StringBuilder();
+            if (name != null && !name.equals(genre.getGenreName())) {
+                changes.append("название: ").append(genre.getGenreName()).append(" -> ").append(name);
+                genre.setGenreName(name);
+            }
+            
+            genreRepository.update(genre);
+            
+            if (!changes.isEmpty()) {
+                logAction(admin, "UPDATE_GENRE", "Genre", genreId, "Обновлен жанр ID=" + genreId + ": " + changes);
+            }
+            
+            return ResponseEntity.ok("Жанр обновлен");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Ошибка: " + e.getMessage());
+        }
     }
 }

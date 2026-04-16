@@ -45,6 +45,7 @@ public class LicenseController {
         public String contractNumber;
         public String ownerName;
         public String startDate;
+        public String uploader;
         public String expirationDate;
         public String terms;
     }

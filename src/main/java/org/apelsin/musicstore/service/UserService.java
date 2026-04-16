@@ -6,9 +6,10 @@ import org.apelsin.musicstore.repository.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -42,8 +43,7 @@ public class UserService {
         transaction.setTransactionCompletionDate(LocalDateTime.now());
         paymentTransactionRepository.save(transaction);
 
-        user.getUserPurchasedTracks().addAll(tracksToBuy);
-        userRepository.save(user);
+        userRepository.addPurchasedTracks(userId, trackIds);
         
         return order;
     }
@@ -55,10 +55,25 @@ public class UserService {
         
         List<Track> albumTracks = trackRepository.findByTrackAlbum_AlbumId(albumId);
         
+        List<Long> existingTrackIds = user.getUserPurchasedTracks().stream()
+            .map(Track::getTrackId)
+            .toList();
+        
+        List<Track> newTracks = albumTracks.stream()
+            .filter(t -> !existingTrackIds.contains(t.getTrackId()))
+            .toList();
+        
+        double totalAmount = album.getAlbumPrice();
+        if (newTracks.isEmpty() && !user.getUserPurchasedAlbums().contains(album)) {
+            totalAmount = albumTracks.stream()
+                .mapToDouble(t -> t.getTrackPrice())
+                .sum();
+        }
+        
         Order order = new Order();
         order.setOrderUser(user);
-        order.setOrderItems(albumTracks);
-        order.setOrderTotalAmount(album.getAlbumPrice());
+        order.setOrderItems(newTracks.isEmpty() ? albumTracks : newTracks);
+        order.setOrderTotalAmount(totalAmount);
         order.setOrderDate(LocalDateTime.now());
         order = orderRepository.save(order);
 
@@ -70,9 +85,10 @@ public class UserService {
         transaction.setTransactionCompletionDate(LocalDateTime.now());
         paymentTransactionRepository.save(transaction);
 
-        user.getUserPurchasedTracks().addAll(albumTracks);
-        user.getUserPurchasedAlbums().add(album);
-        userRepository.save(user);
+        if (!newTracks.isEmpty()) {
+            userRepository.addPurchasedTracks(userId, newTracks.stream().map(Track::getTrackId).toList());
+        }
+        userRepository.addPurchasedAlbums(userId, List.of(albumId));
         
         return order;
     }
@@ -92,7 +108,7 @@ public class UserService {
     public Track downloadTrack(Long trackId) {
         Track track = trackRepository.findById(trackId).orElseThrow();
 
-        track.setTrackDownloadCount(track.getTrackDownloadCount() + 1);
+        trackRepository.incrementDownloadCount(trackId);
 
         if (track.getTrackAlbum() != null) {
             Album album = track.getTrackAlbum();
@@ -102,7 +118,7 @@ public class UserService {
         Artist artist = track.getTrackArtist();
         artist.setArtistRating(artist.getArtistRating() + 1);
 
-        return trackRepository.save(track);
+        return track;
     }
 
     @Transactional

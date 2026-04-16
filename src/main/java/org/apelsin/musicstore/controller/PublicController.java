@@ -3,9 +3,11 @@ package org.apelsin.musicstore.controller;
 import lombok.RequiredArgsConstructor;
 import org.apelsin.musicstore.model.Album;
 import org.apelsin.musicstore.model.Artist;
+import org.apelsin.musicstore.model.Genre;
 import org.apelsin.musicstore.model.Track;
 import org.apelsin.musicstore.repository.AlbumRepository;
 import org.apelsin.musicstore.repository.ArtistRepository;
+import org.apelsin.musicstore.repository.GenreRepository;
 import org.apelsin.musicstore.repository.TrackRepository;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,6 +20,22 @@ public class PublicController {
     private final TrackRepository trackRepository;
     private final ArtistRepository artistRepository;
     private final AlbumRepository albumRepository;
+    private final GenreRepository genreRepository;
+
+    @GetMapping("/genres")
+    public List<Genre> getAllGenres() {
+        return genreRepository.findAll();
+    }
+
+    @GetMapping("/genres/{genreId}")
+    public Genre getGenre(@PathVariable Long genreId) {
+        return genreRepository.findById(genreId).orElseThrow();
+    }
+
+    @GetMapping("/genres/{genreId}/tracks")
+    public List<Track> getTracksByGenre(@PathVariable Long genreId) {
+        return trackRepository.findByTrackGenres_GenreId(genreId);
+    }
 
     @GetMapping("/artists")
     public List<Artist> getAllArtists(

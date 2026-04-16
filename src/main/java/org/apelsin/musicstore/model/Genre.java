@@ -1,5 +1,6 @@
 package org.apelsin.musicstore.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.util.List;
@@ -16,5 +17,6 @@ public class Genre {
     private String genreName;
 
     @ManyToMany(mappedBy = "trackGenres")
+    @JsonIgnoreProperties({"trackGenres", "trackAlbum", "trackArtist", "trackUploadedBy"})
     private List<Track> genreTracks;
 }

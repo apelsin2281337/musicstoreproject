@@ -8,7 +8,8 @@
         <div class="album-buy">
           <span class="price">{{ formatPrice(album.albumPrice) }}</span>
           <template v-if="authStore.isLoggedIn">
-            <button class="btn btn-primary" @click="buyWholeAlbum">Купить альбом</button>
+            <button v-if="!cartStore.isAlbumInCart(album.albumId)" class="btn btn-primary" @click="addAlbumToCart">В корзину</button>
+            <span v-else>В корзине</span>
           </template>
           <template v-else>
             <router-link to="/login" class="btn btn-primary">Войти</router-link>
@@ -18,7 +19,7 @@
       <div class="tracklist">
         <div v-for="(t, i) in albumTracks" :key="t.trackId" class="track-row">
           <span>{{ i + 1 }}</span>
-          <div class="info"><h4>{{ t.trackTitle }}</h4></div>
+          <div class="info"><router-link :to="`/track/${t.trackId}`"><h4>{{ t.trackTitle }}</h4></router-link></div>
           <span class="price">{{ formatPrice(t.trackPrice) }}</span>
           <template v-if="authStore.isLoggedIn && libraryStore.isOwned(t.trackId)">
             <button class="btn btn-sm btn-success" @click="download(t)">Скачать</button>
@@ -62,7 +63,7 @@
 
 <script setup>
 import { onMounted, computed, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useMusicStore } from '@/stores/music'
 import { useCartStore } from '@/stores/cart'
 import { useLibraryStore } from '@/stores/library'
@@ -71,6 +72,7 @@ import { useToast } from '@/composables/useToast'
 import { userApi, reviewApi } from '@/services/api'
 
 const route = useRoute()
+const router = useRouter()
 const musicStore = useMusicStore()
 const cartStore = useCartStore()
 const libraryStore = useLibraryStore()
@@ -85,12 +87,15 @@ const albumTracks = computed(() => musicStore.albumTracks)
 
 function formatPrice(price) { return price ? `$${price.toFixed(2)}` : 'Бесплатно' }
 function addToCart(t) { cartStore.addItem(t); toast.success(`"${t.trackTitle}" добавлен`) }
+function addAlbumToCart() { cartStore.addAlbum(album.value); toast.success(`"${album.value.albumTitle}" добавлен в корзину`) }
 function download(t) { libraryStore.downloadTrack(t.trackId) }
 async function buyWholeAlbum() {
   try {
     await userApi.buyAlbum(authStore.userId, album.value.albumId)
     toast.success('Альбом успешно куплен!')
-    libraryStore.fetchLibrary()
+    await libraryStore.fetchLibrary()
+    await musicStore.fetchAlbum(route.params.id)
+    loadReviews()
   } catch (e) {
     toast.error('Ошибка: ' + e.message)
   }
@@ -99,7 +104,7 @@ async function submitReview() {
   try {
     await reviewApi.addReview(authStore.userId, null, album.value.albumId, newRating.value, newComment.value)
     toast.success('Отзыв отправлен!')
-    reviews.value = await reviewApi.getAlbumReviews(album.value.albumId)
+    await loadReviews()
     newComment.value = ''
   } catch (e) {
     toast.error('Ошибка: ' + e.message)

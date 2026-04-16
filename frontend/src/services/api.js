@@ -138,6 +138,15 @@ export const publicApi = {
   },
   getPopularTracks() {
     return api.get('/public/tracks/popular')
+  },
+  getGenres() {
+    return api.get('/public/genres')
+  },
+  getGenre(id) {
+    return api.get(`/public/genres/${id}`)
+  },
+  getGenreTracks(genreId) {
+    return api.get(`/public/genres/${genreId}/tracks`)
   }
 }
 
@@ -201,14 +210,16 @@ export const adminApi = {
     formData.append('adminId', adminId)
     return api.postForm('/admin/addalbum', formData)
   },
-  uploadTrack(file, title, price, artistId, albumId, adminId) {
+  uploadTrack(file, title, price, artistId, albumId, adminId, terms, genreIds = []) {
     const formData = new FormData()
     formData.append('file', file)
     formData.append('title', title)
     formData.append('price', price)
     formData.append('artistId', artistId)
+    formData.append('licenseTerms', terms)
     if (albumId) formData.append('albumId', albumId)
     formData.append('adminId', adminId)
+    genreIds.forEach(gid => formData.append('genreIds', gid))
     return api.postForm('/admin/uploadtrack', formData)
   },
   promote(userId, adminId) {
@@ -232,6 +243,32 @@ deleteTrack(trackId, adminId) {
 
   getPopularTracks() {
     return api.get('/admin/tracks/popular')
+  },
+
+  addGenre(name, adminId) {
+    return api.post(`/admin/genres?name=${encodeURIComponent(name)}&adminId=${adminId}`, {})
+  },
+  deleteGenre(genreId, adminId) {
+    return api.delete(`/admin/genres/${genreId}?adminId=${adminId}`)
+  },
+
+  updateArtist(artistId, data, adminId) {
+    const params = new URLSearchParams(data)
+    params.append('adminId', adminId)
+    return api.put(`/admin/artists/${artistId}?${params}`, {})
+  },
+  updateAlbum(albumId, data, adminId) {
+    const params = new URLSearchParams(data)
+    params.append('adminId', adminId)
+    return api.put(`/admin/albums/${albumId}?${params}`, {})
+  },
+  updateTrack(trackId, data, adminId) {
+    const params = new URLSearchParams(data)
+    params.append('adminId', adminId)
+    return api.put(`/admin/tracks/${trackId}?${params}`, {})
+  },
+  updateGenre(genreId, name, adminId) {
+    return api.put(`/admin/genres/${genreId}?name=${encodeURIComponent(name)}&adminId=${adminId}`, {})
   }
 }
 

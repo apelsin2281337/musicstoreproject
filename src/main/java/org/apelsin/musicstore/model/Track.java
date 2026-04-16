@@ -24,17 +24,17 @@ public class Track {
 
     @ManyToOne
     @JoinColumn(name = "artist_id")
-    @JsonIgnoreProperties({"artistAlbums", "artistDescription"})
+    @JsonIgnoreProperties({"artistAlbums", "artistDescription", "artistTracks"})
     private Artist trackArtist;
 
     @ManyToOne
     @JoinColumn(name = "album_id")
-    @JsonIgnoreProperties({"albumTracks", "albumArtist"})
+    @JsonIgnoreProperties({"albumTracks", "albumArtist", "albumPrice", "albumRating", "albumReleaseYear"})
     private Album trackAlbum;
 
     @ManyToOne
     @JoinColumn(name = "admin_id")
-    @JsonIgnoreProperties({"userPurchasedTracks", "userPurchasedAlbums", "userPlaylists", "userUploadedTracks", "userPassword"})
+    @JsonIgnoreProperties({"userPurchasedTracks", "userPurchasedAlbums", "userPlaylists", "userUploadedTracks", "userPassword", "userRole", "userUsername"})
     private User trackUploadedBy;
 
     @ManyToMany
@@ -43,6 +43,6 @@ public class Track {
             joinColumns = @JoinColumn(name = "track_id"),
             inverseJoinColumns = @JoinColumn(name = "genre_id")
     )
-    @JsonIgnoreProperties("trackGenres")
+    @JsonIgnoreProperties("genreTracks")
     private List<Genre> trackGenres;
 }

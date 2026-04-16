@@ -20,8 +20,10 @@ public class License {
 
     private String licenseContractNumber;
     private String licenseOwnerName;
+    private String uploader;
     private LocalDate licenseStartDate;
     private LocalDate licenseExpirationDate;
+
 
     @Column(columnDefinition = "TEXT")
     private String licenseTerms;

@@ -53,6 +53,7 @@ public class UserController {
 
     @PostMapping("/{userId}/buy")
     public ResponseEntity<String> purchase(@PathVariable Long userId, @RequestBody Map<String, Object> body) {
+        @SuppressWarnings("unchecked") //annoying bitch
         List<Long> trackIds = ((List<Integer>) body.get("trackIds")).stream().map(Integer::longValue).toList();
         String paymentMethod = (String) body.getOrDefault("paymentMethod", "CARD");
         userService.buyTracks(userId, trackIds, paymentMethod);

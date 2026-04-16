@@ -1,14 +1,16 @@
-import { inject, ref } from 'vue'
+import { inject, reactive } from 'vue'
 
-const toasts = inject('toasts', ref([]))
 let toastId = 0
 
 export function useToast() {
+  const toasts = inject('toasts', reactive([]))
+  
   function show(message, type = 'info', duration = 3000) {
     const id = ++toastId
-    toasts.value.push({ id, message, type })
+    toasts.push({ id, message, type })
     setTimeout(() => {
-      toasts.value = toasts.value.filter(t => t.id !== id)
+      const idx = toasts.findIndex(t => t.id === id)
+      if (idx !== -1) toasts.splice(idx, 1)
     }, duration)
   }
 
