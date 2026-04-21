@@ -1,7 +1,9 @@
 FROM gradle:9.3.1-jdk25 AS build
 WORKDIR /app
+COPY build.gradle settings.gradle ./
+RUN gradle compileJava --no-daemon
 COPY . .
-RUN gradle bootJar
+RUN gradle bootJar --no-daemon
 
 FROM eclipse-temurin:25-jre
 WORKDIR /app

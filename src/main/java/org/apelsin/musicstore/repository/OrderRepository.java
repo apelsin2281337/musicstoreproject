@@ -2,7 +2,6 @@ package org.apelsin.musicstore.repository;
 
 import org.apelsin.musicstore.model.Order;
 import org.apelsin.musicstore.model.Track;
-import org.apelsin.musicstore.model.User;
 import org.springframework.stereotype.Repository;
 
 import javax.sql.DataSource;
@@ -16,12 +15,10 @@ public class OrderRepository {
 
     private final DataSource dataSource;
     private final UserRepository userRepository;
-    private final TrackRepository trackRepository;
 
     public OrderRepository(DataSource dataSource, UserRepository userRepository, TrackRepository trackRepository) {
         this.dataSource = dataSource;
         this.userRepository = userRepository;
-        this.trackRepository = trackRepository;
     }
 
     private Order mapResultSetToOrder(ResultSet rs) throws SQLException {
@@ -232,6 +229,27 @@ public class OrderRepository {
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setLong(1, orderId);
             ps.executeUpdate();
+        }
+    }
+
+    public List<Order> findByUserIdUsingFunction(Long userId) {
+        String sql = "SELECT * FROM fn_get_orders_by_user(?)";
+        List<Order> orders = new ArrayList<>();
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setLong(1, userId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    orders.add(mapResultSetToOrder(rs));
+                }
+            }
+            return orders;
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to find orders by user using function", e);
         }
     }
 }

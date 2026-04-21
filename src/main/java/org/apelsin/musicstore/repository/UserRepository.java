@@ -4,7 +4,6 @@ import org.apelsin.musicstore.model.User;
 import org.apelsin.musicstore.model.Role;
 import org.apelsin.musicstore.model.Track;
 import org.apelsin.musicstore.model.Album;
-import org.apelsin.musicstore.model.Artist;
 import org.springframework.stereotype.Repository;
 
 import javax.sql.DataSource;

@@ -42,11 +42,18 @@ const routes = [
     name: 'library',
     component: () => import('@/views/LibraryView.vue'),
     meta: { requiresAuth: true }
+
   },
   {
     path: '/playlists',
     name: 'playlists',
     component: () => import('@/views/PlaylistsView.vue'),
+
+  },
+  {
+    path: '/playlist/:id',
+    name: 'playlist',
+    component: () => import('@/views/PlaylistView.vue'),
     meta: { requiresAuth: true }
   },
   {

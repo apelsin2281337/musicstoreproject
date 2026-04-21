@@ -238,4 +238,50 @@ public class AlbumRepository {
             throw new RuntimeException("Failed to update album", e);
         }
     }
+
+    public List<Album> findByArtistIdUsingFunction(Long artistId) {
+        String sql = "SELECT * FROM fn_get_albums_by_artist(?)";
+        List<Album> albums = new ArrayList<>();
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setLong(1, artistId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    albums.add(mapResultSetToAlbum(rs));
+                }
+            }
+            return albums;
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to find albums by artist using function", e);
+        }
+    }
+
+    public List<Album> findPurchasedAlbumsByUserUsingFunction(Long userId) {
+        String sql = "SELECT * FROM fn_get_purchased_albums_by_user(?)";
+        List<Album> albums = new ArrayList<>();
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setLong(1, userId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Album album = new Album();
+                    album.setAlbumId(rs.getLong("album_id"));
+                    album.setAlbumTitle(rs.getString("album_title"));
+                    album.setAlbumPrice(rs.getDouble("album_price"));
+                    albums.add(album);
+                }
+            }
+            return albums;
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to find purchased albums using function", e);
+        }
+    }
 }

@@ -11,13 +11,14 @@
         <button :class="{ active: activeTab === 'artists' }" @click="activeTab = 'artists'">Артисты</button>
         <button :class="{ active: activeTab === 'albums' }" @click="activeTab = 'albums'">Альбомы</button>
         <button :class="{ active: activeTab === 'genres' }" @click="activeTab = 'genres'">Жанры</button>
+        <button :class="{ active: activeTab === 'playlists'}" @click="activeTab = 'playlists'">Плейлисты</button>
       </div>
     </div>
 
     <div v-if="musicStore.loading" class="loading"><div class="spinner"></div></div>
     <div v-else-if="activeTab === 'tracks'">
       <div v-if="filteredTracks.length === 0" class="empty-state"><p>Не найдено</p></div>
-      <div v-else class="grid"><TrackCard v-for="t in filteredTracks" :key="t.trackId" :track="t" /></div>
+      <div v-else class="track-list"><TrackCard v-for="t in filteredTracks" :key="t.trackId" :track="t" /></div>
     </div>
     <div v-else-if="activeTab === 'artists'">
       <div v-if="filteredArtists.length === 0" class="empty-state"><p>Не найдено</p></div>
@@ -41,11 +42,15 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useMusicStore } from '@/stores/music'
+import { useLibraryStore } from '@/stores/library'
+import { useAuthStore } from '@/stores/auth'
 import TrackCard from '@/components/TrackCard.vue'
 import ArtistCard from '@/components/ArtistCard.vue'
 import AlbumCard from '@/components/AlbumCard.vue'
 
 const musicStore = useMusicStore()
+const libraryStore = useLibraryStore()
+const authStore = useAuthStore()
 const searchQuery = ref('')
 const activeTab = ref('tracks')
 
@@ -68,7 +73,13 @@ const filteredAlbums = computed(() => {
 })
 
 onMounted(async () => {
+  musicStore.loading = true
   await Promise.all([musicStore.fetchPopularTracks(), musicStore.fetchArtists(), musicStore.fetchAlbums(), musicStore.fetchGenres()])
+  musicStore.loading = false
+  if (authStore.isLoggedIn) {
+    await libraryStore.fetchLibrary()
+    await libraryStore.fetchPlaylists()
+  }
 })
 
 watch(activeTab, () => { searchQuery.value = '' })
@@ -82,6 +93,7 @@ watch(activeTab, () => { searchQuery.value = '' })
 .tabs button:hover:not(.active) { background: #d4d4d4; }
 .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
 @media (min-width: 640px) { .grid { grid-template-columns: repeat(4, 1fr); } }
+.track-list { display: flex; flex-direction: column; gap: 8px; }
 .genre-card { background: white; padding: 16px; border: 1px solid #e5e5e5; border-radius: 6px; text-decoration: none; color: inherit; }
 .genre-card:hover { border-color: #999; }
 .genre-card h4 { font-size: 14px; margin: 0; }

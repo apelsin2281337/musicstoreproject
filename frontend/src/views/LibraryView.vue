@@ -8,37 +8,95 @@
       <router-link to="/browse" class="btn">Каталог</router-link>
     </div>
     <div v-else class="track-list">
-      <div v-for="(t, i) in libraryStore.tracks" :key="t.trackId" class="track-row">
-        <span>{{ i + 1 }}</span>
-        <div class="info">
+      <div v-for="t in libraryStore.tracks" :key="t.trackId" class="track-item">
+        <div class="track-info">
           <h4>{{ t.trackTitle }}</h4>
           <p>{{ t.trackArtist?.artistName }}</p>
         </div>
-        <button class="btn btn-sm btn-success" @click="download(t)">Скачать</button>
+        <div class="actions">
+          <button class="btn btn-sm btn-playlist" @click="openPlaylistModal(t)">+</button>
+          <button class="btn btn-sm btn-success" @click="download(t)">↓</button>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="showPlaylistModal" class="modal" @click.self="showPlaylistModal = false">
+      <div class="modal-content">
+        <h3>Добавить в плейлист</h3>
+        <div class="playlist-list">
+          <button v-for="p in libraryStore.playlists" :key="p.playlistId" class="playlist-btn" @click="addToPlaylist(p)">
+            {{ p.playlistTitle }}
+          </button>
+        </div>
+        <button class="btn btn-secondary" @click="showPlaylistModal = false">Отмена</button>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useLibraryStore } from '@/stores/library'
+import { useToast } from '@/composables/useToast'
 
 const libraryStore = useLibraryStore()
+const toast = useToast()
+const showPlaylistModal = ref(false)
+const selectedTrack = ref(null)
 
 function download(track) {
   libraryStore.downloadTrack(track.trackId)
 }
 
+function openPlaylistModal(track) {
+  selectedTrack.value = track
+  showPlaylistModal.value = true
+}
+
+async function addToPlaylist(playlist) {
+  if (libraryStore.playlists.length === 0) {
+    await libraryStore.fetchPlaylists()
+  }
+  await libraryStore.addToPlaylist(playlist.playlistId, selectedTrack.value.trackId)
+  toast.success(`Добавлен в "${playlist.playlistTitle}"`)
+  showPlaylistModal.value = false
+}
+
+onMounted(async () => {
+  await libraryStore.fetchLibrary()
+  if (libraryStore.playlists.length === 0) {
+    await libraryStore.fetchPlaylists()
+  }
+})
+
 onMounted(() => libraryStore.fetchLibrary())
 </script>
 
 <style scoped>
-.track-list { background: white; border: 1px solid #e5e5e5; border-radius: 4px; }
-.track-row { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid #e5e5e5; }
-.track-row:last-child { border-bottom: none; }
-.track-row span:first-child { width: 24px; color: #888; }
-.track-row .info { flex: 1; }
-.track-row h4 { font-size: 14px; }
-.track-row p { font-size: 13px; color: #888; }
+.track-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.track-item {
+  background: white;
+  border: 1px solid #e5e5e5;
+  border-radius: 4px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.track-info { flex: 1; }
+.track-info h4 { font-size: 14px; margin: 0; }
+.track-info p { font-size: 13px; color: #888; margin: 0; }
+.actions { display: flex; gap: 8px; }
+.btn-playlist { background: #7c3aed; }
+.btn-playlist:hover { background: #6d28d9; }
+.modal { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+.modal-content { background: white; padding: 24px; border-radius: 8px; width: 300px; }
+.modal-content h3 { font-size: 16px; margin: 0 0 16px; }
+.playlist-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+.playlist-btn { text-align: left; padding: 10px 12px; background: #f5f5f5; border: 1px solid #e5e5e5; border-radius: 4px; cursor: pointer; font-size: 14px; }
+.playlist-btn:hover { background: #e5e5e5; }
 </style>

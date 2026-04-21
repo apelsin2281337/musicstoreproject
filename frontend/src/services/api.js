@@ -142,6 +142,12 @@ export const publicApi = {
   getGenres() {
     return api.get('/public/genres')
   },
+  getRecommendedTracks() {
+    return api.get('/public/tracks/recommended')
+  },
+  getFeaturedPlaylists() {
+    return api.get('/public/playlists/featured')
+  },
   getGenre(id) {
     return api.get(`/public/genres/${id}`)
   },
@@ -174,6 +180,9 @@ export const userApi = {
   },
   getPlaylists(userId) {
     return api.get(`/user/${userId}/playlists`)
+  },
+  getPlaylist(playlistId) {
+    return api.get(`/user/playlists/${playlistId}`)
   },
   createPlaylist(userId, title) {
     return api.post(`/user/${userId}/playlists`, { title })

@@ -1,7 +1,7 @@
 package org.apelsin.musicstore.repository;
 
 import org.apelsin.musicstore.model.Playlist;
-import org.apelsin.musicstore.model.User;
+import org.apelsin.musicstore.model.Track;
 import org.springframework.stereotype.Repository;
 
 import javax.sql.DataSource;
@@ -15,10 +15,12 @@ public class PlaylistRepository {
 
     private final DataSource dataSource;
     private final UserRepository userRepository;
+    private final TrackRepository trackRepository;
 
-    public PlaylistRepository(DataSource dataSource, UserRepository userRepository) {
+    public PlaylistRepository(DataSource dataSource, UserRepository userRepository, TrackRepository trackRepository) {
         this.dataSource = dataSource;
         this.userRepository = userRepository;
+        this.trackRepository = trackRepository;
     }
 
     private Playlist mapResultSetToPlaylist(ResultSet rs) throws SQLException {
@@ -30,6 +32,11 @@ public class PlaylistRepository {
         userRepository.findById(userId).ifPresent(playlist::setPlaylistOwner);
 
         return playlist;
+    }
+
+    private void loadPlaylistTracks(Playlist playlist) {
+        List<Track> tracks = trackRepository.findByPlaylistId(playlist.getPlaylistId());
+        playlist.setPlaylistTracks(tracks);
     }
 
     public Playlist save(Playlist playlist) {
@@ -48,6 +55,7 @@ public class PlaylistRepository {
                     playlist.setPlaylistId(rs.getLong(1));
                 }
             }
+            playlist.setPlaylistTracks(new ArrayList<>());
             return playlist;
 
         } catch (SQLException e) {
@@ -56,14 +64,20 @@ public class PlaylistRepository {
     }
 
     public void deleteById(Long id) {
-        String sql = "DELETE FROM playlists WHERE playlist_id = ?";
-
+        String sql = "DELETE FROM playlist_tracks WHERE playlist_id = ?";
         try (Connection conn = dataSource.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
-
             ps.setLong(1, id);
             ps.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to delete playlist tracks", e);
+        }
 
+        sql = "DELETE FROM playlists WHERE playlist_id = ?";
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, id);
+            ps.executeUpdate();
         } catch (SQLException e) {
             throw new RuntimeException("Failed to delete playlist", e);
         }
@@ -79,7 +93,9 @@ public class PlaylistRepository {
 
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    return Optional.of(mapResultSetToPlaylist(rs));
+                    Playlist playlist = mapResultSetToPlaylist(rs);
+                    loadPlaylistTracks(playlist);
+                    return Optional.of(playlist);
                 }
             }
             return Optional.empty();
@@ -98,7 +114,9 @@ public class PlaylistRepository {
              ResultSet rs = ps.executeQuery()) {
 
             while (rs.next()) {
-                playlists.add(mapResultSetToPlaylist(rs));
+                Playlist playlist = mapResultSetToPlaylist(rs);
+                loadPlaylistTracks(playlist);
+                playlists.add(playlist);
             }
             return playlists;
 
@@ -118,7 +136,9 @@ public class PlaylistRepository {
 
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    playlists.add(mapResultSetToPlaylist(rs));
+                    Playlist playlist = mapResultSetToPlaylist(rs);
+                    loadPlaylistTracks(playlist);
+                    playlists.add(playlist);
                 }
             }
             return playlists;
@@ -147,6 +167,60 @@ public class PlaylistRepository {
 
         } catch (SQLException e) {
             throw new RuntimeException("Failed to update playlist", e);
+        }
+    }
+
+    public void addTrackToPlaylist(Long playlistId, Long trackId) {
+        String sql = "INSERT INTO playlist_tracks (playlist_id, track_id) VALUES (?, ?) ON CONFLICT (playlist_id, track_id) DO NOTHING";
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setLong(1, playlistId);
+            ps.setLong(2, trackId);
+            ps.executeUpdate();
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to add track to playlist", e);
+        }
+    }
+
+    public void removeTrackFromPlaylist(Long playlistId, Long trackId) {
+        String sql = "DELETE FROM playlist_tracks WHERE playlist_id = ? AND track_id = ?";
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setLong(1, playlistId);
+            ps.setLong(2, trackId);
+            ps.executeUpdate();
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to remove track from playlist", e);
+        }
+    }
+
+    public List<Playlist> findByUserIdUsingFunction(Long userId) {
+        String sql = "SELECT * FROM fn_get_playlists_by_user(?)";
+        List<Playlist> playlists = new ArrayList<>();
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setLong(1, userId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Playlist playlist = new Playlist();
+                    playlist.setPlaylistId(rs.getLong("playlist_id"));
+                    playlist.setPlaylistTitle(rs.getString("playlist_title"));
+                    playlists.add(playlist);
+                }
+            }
+            return playlists;
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to find playlists by user using function", e);
         }
     }
 }

@@ -7,11 +7,11 @@
     </section>
 
     <section class="section container">
-      <h2>Популярные треки</h2>
+      <h2>Рекомендованные треки</h2>
       <div v-if="musicStore.loading" class="loading"><div class="spinner"></div></div>
-      <div v-else-if="musicStore.popularTracks.length === 0" class="empty-state"><p>Треки не найдены</p></div>
+      <div v-else-if="musicStore.recommendedTracks.length === 0" class="empty-state"><p>Треки не найдены</p></div>
       <div v-else class="grid">
-        <TrackCard v-for="t in musicStore.popularTracks.slice(0, 8)" :key="t.trackId" :track="t" />
+        <TrackCard v-for="t in musicStore.recommendedTracks.slice(0, 6)" :key="t.trackId" :track="t" />
       </div>
     </section>
 
@@ -43,6 +43,7 @@ import { useAuthStore } from '@/stores/auth'
 import TrackCard from '@/components/TrackCard.vue'
 import ArtistCard from '@/components/ArtistCard.vue'
 import AlbumCard from '@/components/AlbumCard.vue'
+import PlaylistCard from '@/components/PlaylistCard.vue'
 
 const musicStore = useMusicStore()
 const libraryStore = useLibraryStore()
@@ -50,12 +51,13 @@ const authStore = useAuthStore()
 
 onMounted(async () => {
   await Promise.all([
-    musicStore.fetchPopularTracks(),
+    musicStore.fetchRecommendedTracks(),
     musicStore.fetchArtists(),
     musicStore.fetchAlbums()
   ])
   if (authStore.isLoggedIn) {
     await libraryStore.fetchLibrary()
+    await libraryStore.fetchPlaylists()
   }
 })
 </script>
@@ -82,6 +84,16 @@ onMounted(async () => {
 }
 
 @media (min-width: 640px) {
-  .grid { grid-template-columns: repeat(4, 1fr); }
+  .grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+.grid-playlists {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+@media (min-width: 640px) {
+  .grid-playlists { grid-template-columns: repeat(2, 1fr); }
 }
 </style>

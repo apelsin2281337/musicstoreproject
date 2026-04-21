@@ -9,21 +9,25 @@
     <div v-else-if="libraryStore.playlists.length === 0" class="empty-state"><p>Нет плейлистов</p></div>
     <div v-else class="list">
       <div v-for="p in libraryStore.playlists" :key="p.playlistId" class="item">
-        <h4>{{ p.playlistTitle }}</h4>
-        <span>{{ p.playlistTracks?.length || 0 }} треков</span>
-          <button class="btn btn-link" @click="confirmDelete(p)">Удалить</button>
+        <router-link :to="`/playlist/${p.playlistId}`" class="item-link">
+          <h4>{{ p.playlistTitle }}</h4>
+          <span>{{ p.playlistTracks?.length || 0 }} треков</span>
+        </router-link>
+          <button class="btn btn-link btn-danger" @click="confirmDelete(p)">×</button>
       </div>
     </div>
 
-    <div v-if="showCreateModal" class="modal">
-      <h3>Новый плейлист</h3>
-      <form @submit.prevent="createPlaylist">
-        <input v-model="newPlaylistTitle" class="form-input" placeholder="Название" required />
-        <div class="actions">
-          <button type="button" class="btn btn-secondary" @click="showCreateModal = false">Отмена</button>
-          <button type="submit" class="btn">Создать</button>
-        </div>
-      </form>
+    <div v-if="showCreateModal" class="modal" @click.self="closeModal">
+      <div class="modal-content">
+        <h3>Новый плейлист</h3>
+        <form @submit.prevent="createPlaylist">
+          <input v-model="newPlaylistTitle" class="form-input" placeholder="Название" required autofocus />
+          <div class="actions">
+            <button type="button" class="btn btn-secondary" @click="closeModal">Отмена</button>
+            <button type="submit" class="btn">Создать</button>
+          </div>
+        </form>
+      </div>
     </div>
   </div>
 </template>
@@ -42,9 +46,13 @@ async function createPlaylist() {
   if (!newPlaylistTitle.value) return
   await libraryStore.createPlaylist(newPlaylistTitle.value)
   toast.success('Создан')
+  closeModal()
+  await libraryStore.fetchPlaylists()
+}
+
+function closeModal() {
   showCreateModal.value = false
   newPlaylistTitle.value = ''
-  await libraryStore.fetchPlaylists()
 }
 
 async function confirmDelete(p) {
@@ -63,10 +71,12 @@ onMounted(() => libraryStore.fetchPlaylists())
 .list { background: white; border: 1px solid #e5e5e5; border-radius: 4px; }
 .item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid #e5e5e5; }
 .item:last-child { border-bottom: none; }
-.item h4 { flex: 1; font-size: 14px; }
+.item-link { flex: 1; display: flex; align-items: center; gap: 12px; color: inherit; text-decoration: none; }
+.item-link h4 { flex: 1; font-size: 14px; margin: 0; }
 .item span { color: #888; font-size: 13px; }
-.modal { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; }
-.modal form { background: white; padding: 24px; border-radius: 4px; width: 300px; }
-.modal h3 { font-size: 16px; margin-bottom: 16px; }
+.btn-danger { color: #dc2626; }
+.modal { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+.modal-content { background: white; padding: 24px; border-radius: 8px; width: 300px; }
+.modal-content h3 { font-size: 16px; margin: 0 0 16px; }
 .modal .actions { display: flex; gap: 8px; margin-top: 16px; justify-content: flex-end; }
 </style>

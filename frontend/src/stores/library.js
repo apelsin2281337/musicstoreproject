@@ -34,14 +34,11 @@ export const useLibraryStore = defineStore('library', () => {
     const authStore = useAuthStore()
     if (!authStore.isLoggedIn || !authStore.userId) return
 
-    loading.value = true
     error.value = null
     try {
       playlists.value = await userApi.getPlaylists(authStore.userId)
     } catch (e) {
       error.value = e.message
-    } finally {
-      loading.value = false
     }
   }
 
@@ -103,6 +100,12 @@ export const useLibraryStore = defineStore('library', () => {
     return tracks.value.some(t => t.trackId === trackId)
   }
 
+  function isInPlaylist(playlistId, trackId) {
+    const playlist = playlists.value.find(p => p.playlistId === playlistId)
+    if (!playlist || !playlist.playlistTracks) return false
+    return playlist.playlistTracks.some(t => t.trackId === trackId)
+  }
+
   return {
     tracks,
     playlists,
@@ -115,6 +118,7 @@ export const useLibraryStore = defineStore('library', () => {
     addToPlaylist,
     removeFromPlaylist,
     downloadTrack,
-    isOwned
+    isOwned,
+    isInPlaylist
   }
 })

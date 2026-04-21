@@ -1,9 +1,6 @@
 package org.apelsin.musicstore.repository;
 
 import org.apelsin.musicstore.model.Review;
-import org.apelsin.musicstore.model.User;
-import org.apelsin.musicstore.model.Track;
-import org.apelsin.musicstore.model.Album;
 import org.springframework.stereotype.Repository;
 
 import javax.sql.DataSource;
@@ -217,6 +214,32 @@ public class ReviewRepository {
 
         } catch (SQLException e) {
             throw new RuntimeException("Failed to update review", e);
+        }
+    }
+
+    public List<Review> findByTrackIdUsingFunction(Long trackId) {
+        String sql = "SELECT * FROM fn_get_reviews_by_track(?)";
+        List<Review> reviews = new ArrayList<>();
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setLong(1, trackId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Review review = new Review();
+                    review.setReviewId(rs.getLong("review_id"));
+                    review.setReviewRating(rs.getInt("review_rating"));
+                    review.setReviewComment(rs.getString("review_comment"));
+                    review.setReviewDate(rs.getTimestamp("review_date").toLocalDateTime());
+                    reviews.add(review);
+                }
+            }
+            return reviews;
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to find reviews by track using function", e);
         }
     }
 }

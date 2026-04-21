@@ -113,4 +113,14 @@ public class PublicController {
     public Track getTrack(@PathVariable Long trackId) {
         return trackRepository.findById(trackId).orElseThrow();
     }
+
+    @GetMapping("/tracks/recommended")
+    public List<Track> getRecommendedTracks() {
+        return trackRepository.findRecommendedTracks();
+    }
+
+    @GetMapping("/playlists/featured")
+    public List<?> getFeaturedPlaylists() {
+        return trackRepository.findFeaturedPlaylists();
+    }
 }

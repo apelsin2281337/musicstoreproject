@@ -3,6 +3,7 @@ import vue from '@vitejs/plugin-vue'
 import { resolve } from 'path'
 
 export default defineConfig({
+  define: { __VUE_PROD_DEVTOOLS__: true },
   plugins: [vue()],
   resolve: {
     alias: {
@@ -20,10 +21,7 @@ export default defineConfig({
     proxy: {
       '/api': {
         target: 'http://localhost:8080',
-        changeOrigin: true,
-        headers: {
-          'X-Admin-Id': 'true'
-        }
+        changeOrigin: true
       }
     }
   }

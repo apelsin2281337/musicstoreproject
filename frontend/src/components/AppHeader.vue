@@ -6,6 +6,7 @@
         <router-link to="/">Главная</router-link>
         <router-link to="/browse">Каталог</router-link>
         <router-link v-if="authStore.isLoggedIn" to="/library">Медиатека</router-link>
+        <router-link v-if="authStore.isLoggedIn" to="/playlists">Плейлисты</router-link>
         <router-link v-if="authStore.isAdmin" to="/admin">Админ</router-link>
       </nav>
       <div class="actions">

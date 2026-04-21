@@ -30,7 +30,7 @@ export const useAuthStore = defineStore('auth', () => {
       const userData = await authApi.login(username, password)
       user.value = userData
       localStorage.setItem('user', JSON.stringify(userData))
-      localStorage.setItem('token', userData.userPassword || '')
+      localStorage.setItem('token', userData.userId || '')
       return true
     } catch (e) {
       error.value = e.message

@@ -215,4 +215,25 @@ public class ArtistRepository {
     public Optional<Artist> findById(Long id) {
         return findByArtistId(id);
     }
+
+    public List<Artist> findByGenreIdUsingFunction(Long genreId) {
+        String sql = "SELECT * FROM fn_get_artists_by_genre(?)";
+        List<Artist> artists = new ArrayList<>();
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setLong(1, genreId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    artists.add(mapResultSetToArtist(rs));
+                }
+            }
+            return artists;
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to find artists by genre using function", e);
+        }
+    }
 }

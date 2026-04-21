@@ -1,7 +1,6 @@
 package org.apelsin.musicstore.repository;
 
 import org.apelsin.musicstore.model.AdminActionLog;
-import org.apelsin.musicstore.model.User;
 import org.springframework.stereotype.Repository;
 
 import javax.sql.DataSource;

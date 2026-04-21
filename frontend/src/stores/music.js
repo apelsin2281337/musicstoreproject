@@ -7,6 +7,8 @@ export const useMusicStore = defineStore('music', () => {
   const albums = ref([])
   const genres = ref([])
   const popularTracks = ref([])
+  const recommendedTracks = ref([])
+  const featuredPlaylists = ref([])
   const currentArtist = ref(null)
   const currentAlbum = ref(null)
   const artistTracks = ref([])
@@ -104,6 +106,18 @@ export const useMusicStore = defineStore('music', () => {
     }
   }
 
+  async function fetchRecommendedTracks() {
+    loading.value = true
+    error.value = null
+    try {
+      recommendedTracks.value = await publicApi.getRecommendedTracks()
+    } catch (e) {
+      error.value = e.message
+    } finally {
+      loading.value = false
+    }
+  }
+
   function clearCurrent() {
     currentArtist.value = null
     currentAlbum.value = null
@@ -117,6 +131,8 @@ export const useMusicStore = defineStore('music', () => {
     albums,
     genres,
     popularTracks,
+    recommendedTracks,
+    featuredPlaylists,
     currentArtist,
     currentAlbum,
     artistTracks,
@@ -130,6 +146,7 @@ export const useMusicStore = defineStore('music', () => {
     fetchAlbums,
     fetchAlbum,
     fetchPopularTracks,
+    fetchRecommendedTracks,
     fetchGenres,
     fetchGenreTracks,
     clearCurrent

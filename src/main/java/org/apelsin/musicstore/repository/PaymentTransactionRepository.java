@@ -1,7 +1,6 @@
 package org.apelsin.musicstore.repository;
 
 import org.apelsin.musicstore.model.PaymentTransaction;
-import org.apelsin.musicstore.model.Order;
 import org.springframework.stereotype.Repository;
 
 import javax.sql.DataSource;

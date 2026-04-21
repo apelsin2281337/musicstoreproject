@@ -1,10 +1,6 @@
 package org.apelsin.musicstore.repository;
 
 import org.apelsin.musicstore.model.Track;
-import org.apelsin.musicstore.model.Artist;
-import org.apelsin.musicstore.model.Album;
-import org.apelsin.musicstore.model.User;
-import org.apelsin.musicstore.model.Genre;
 import org.springframework.stereotype.Repository;
 
 import javax.sql.DataSource;
@@ -20,7 +16,6 @@ public class TrackRepository {
     private final ArtistRepository artistRepository;
     private final AlbumRepository albumRepository;
     private final UserRepository userRepository;
-    private final GenreRepository genreRepository;
 
     public TrackRepository(DataSource dataSource, ArtistRepository artistRepository, 
                           AlbumRepository albumRepository, UserRepository userRepository,
@@ -29,7 +24,6 @@ public class TrackRepository {
         this.artistRepository = artistRepository;
         this.albumRepository = albumRepository;
         this.userRepository = userRepository;
-        this.genreRepository = genreRepository;
     }
 
     private Track mapResultSetToTrack(ResultSet rs) throws SQLException {
@@ -341,6 +335,54 @@ public class TrackRepository {
         }
     }
 
+    public List<Track> findRecommendedTracks() {
+        String sql = "SELECT * FROM tracks ORDER BY track_download_count DESC, track_id DESC LIMIT 20";
+        List<Track> tracks = new ArrayList<>();
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+
+            while (rs.next()) {
+                tracks.add(mapResultSetToTrack(rs));
+            }
+            return tracks;
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to find recommended tracks", e);
+        }
+    }
+
+    public List<?> findFeaturedPlaylists() {
+        String sql = """
+            SELECT p.*, COUNT(pt.track_id) as track_count
+            FROM playlists p
+            LEFT JOIN playlist_tracks pt ON p.playlist_id = pt.playlist_id
+            GROUP BY p.playlist_id, p.playlist_title, p.user_id
+            ORDER BY track_count DESC, p.playlist_id DESC
+            LIMIT 10
+            """;
+        List<Object[]> results = new ArrayList<>();
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+
+            while (rs.next()) {
+                results.add(new Object[]{
+                    rs.getLong("playlist_id"),
+                    rs.getString("playlist_title"),
+                    rs.getLong("user_id"),
+                    rs.getInt("track_count")
+                });
+            }
+            return results;
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to find featured playlists", e);
+        }
+    }
+
     public List<Track> findAllById(List<Long> ids) {
         if (ids == null || ids.isEmpty()) {
             return new ArrayList<>();
@@ -373,6 +415,113 @@ public class TrackRepository {
 
         } catch (SQLException e) {
             throw new RuntimeException("Failed to find tracks by ids", e);
+        }
+    }
+
+    public List<Track> findByPlaylistId(Long playlistId) {
+        String sql = "SELECT t.* FROM tracks t " +
+                   "JOIN playlist_tracks pt ON t.track_id = pt.track_id " +
+                   "WHERE pt.playlist_id = ?";
+        List<Track> tracks = new ArrayList<>();
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setLong(1, playlistId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    tracks.add(mapResultSetToTrack(rs));
+                }
+            }
+            return tracks;
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to find tracks by playlist id", e);
+        }
+    }
+
+    public List<Track> findByArtistIdUsingFunction(Long artistId) {
+        String sql = "SELECT * FROM fn_get_tracks_by_artist(?)";
+        List<Track> tracks = new ArrayList<>();
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setLong(1, artistId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    tracks.add(mapResultSetToTrack(rs));
+                }
+            }
+            return tracks;
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to find tracks by artist using function", e);
+        }
+    }
+
+    public List<Track> findByAlbumIdUsingFunction(Long albumId) {
+        String sql = "SELECT * FROM fn_get_tracks_by_album(?)";
+        List<Track> tracks = new ArrayList<>();
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setLong(1, albumId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    tracks.add(mapResultSetToTrack(rs));
+                }
+            }
+            return tracks;
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to find tracks by album using function", e);
+        }
+    }
+
+    public List<Track> findPopularTracksUsingFunction(Long limit) {
+        String sql = "SELECT * FROM fn_get_popular_tracks(?)";
+        List<Track> tracks = new ArrayList<>();
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setLong(1, limit);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    tracks.add(mapResultSetToTrack(rs));
+                }
+            }
+            return tracks;
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to find popular tracks using function", e);
+        }
+    }
+
+    public List<Track> findPurchasedTracksByUserUsingFunction(Long userId) {
+        String sql = "SELECT * FROM fn_get_purchased_tracks_by_user(?)";
+        List<Track> tracks = new ArrayList<>();
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setLong(1, userId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    tracks.add(mapResultSetToTrack(rs));
+                }
+            }
+            return tracks;
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to find purchased tracks using function", e);
         }
     }
 }
