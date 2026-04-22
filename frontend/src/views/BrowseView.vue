@@ -92,7 +92,7 @@ watch(activeTab, () => { searchQuery.value = '' })
 .tabs button.active { background: #2563eb; color: white; }
 .tabs button:hover:not(.active) { background: #d4d4d4; }
 .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
-@media (min-width: 640px) { .grid { grid-template-columns: repeat(4, 1fr); } }
+@media (min-width: 640px) { .grid { grid-template-columns: repeat(2, 1fr); } }
 .track-list { display: flex; flex-direction: column; gap: 8px; }
 .genre-card { background: white; padding: 16px; border: 1px solid #e5e5e5; border-radius: 6px; text-decoration: none; color: inherit; }
 .genre-card:hover { border-color: #999; }

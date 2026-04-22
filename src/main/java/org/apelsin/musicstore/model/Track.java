@@ -20,6 +20,8 @@ public class Track {
 
     private String trackFilePath;
 
+    private String trackSource;
+
     private Long trackDownloadCount = 0L;
 
     @ManyToOne

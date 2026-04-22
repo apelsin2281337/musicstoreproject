@@ -61,6 +61,17 @@ public class GenreRepository {
         }
     }
 
+    public void removeGenreFromAllTracks(Long genreId) {
+        String sql = "DELETE FROM track_genres WHERE genre_id = ?";
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, genreId);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to remove genre from tracks", e);
+        }
+    }
+
     public Optional<Genre> findById(Long id) {
         String sql = "SELECT * FROM genres WHERE genre_id = ?";
 

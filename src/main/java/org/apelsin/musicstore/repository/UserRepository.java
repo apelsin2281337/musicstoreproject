@@ -175,6 +175,28 @@ public class UserRepository {
         } catch (SQLException e) {
             throw new RuntimeException("Failed to add purchased albums", e);
         }
+}
+
+    public void removePurchasedAlbum(Long albumId) {
+        String sql = "DELETE FROM user_purchased_albums WHERE album_id = ?";
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, albumId);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to remove purchased album", e);
+        }
+    }
+
+    public void removePurchasedTrack(Long trackId) {
+        String sql = "DELETE FROM user_purchased_tracks WHERE track_id = ?";
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, trackId);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to remove purchased track", e);
+        }
     }
 
     public void deleteById(Long id) {

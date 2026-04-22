@@ -9,8 +9,15 @@ import org.apelsin.musicstore.repository.AlbumRepository;
 import org.apelsin.musicstore.repository.ArtistRepository;
 import org.apelsin.musicstore.repository.GenreRepository;
 import org.apelsin.musicstore.repository.TrackRepository;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.File;
+import java.nio.file.Paths;
 import java.util.List;
 
 @RestController
@@ -21,6 +28,9 @@ public class PublicController {
     private final ArtistRepository artistRepository;
     private final AlbumRepository albumRepository;
     private final GenreRepository genreRepository;
+
+    @Value("${upload.path}")
+    private String uploadPath;
 
     @GetMapping("/genres")
     public List<Genre> getAllGenres() {
@@ -112,6 +122,20 @@ public class PublicController {
     @GetMapping("/tracks/{trackId}")
     public Track getTrack(@PathVariable Long trackId) {
         return trackRepository.findById(trackId).orElseThrow();
+    }
+
+    @GetMapping("/tracks/{trackId}/stream")
+    public ResponseEntity<Resource> streamTrack(@PathVariable Long trackId) {
+        Track track = trackRepository.findById(trackId).orElseThrow();
+        String filename = track.getTrackFilePath().replace("/uploads/music/", "");
+        File file = Paths.get(uploadPath, filename).toFile();
+        if (!file.exists()) {
+            return ResponseEntity.notFound().build();
+        }
+        Resource resource = new FileSystemResource(file);
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .body(resource);
     }
 
     @GetMapping("/tracks/recommended")

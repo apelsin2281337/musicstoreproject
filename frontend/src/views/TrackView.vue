@@ -12,6 +12,31 @@
           <span class="price">{{ formatPrice(track.trackPrice) }}</span>
           <span class="downloads">{{ track.trackDownloadCount || 0 }} скачиваний</span>
         </div>
+        <div class="music-player">
+          <div class="player-wrapper">
+            <button class="play-btn" @click="togglePlay">
+              <span v-if="isPlaying" class="icon-pause">⏸</span>
+              <span v-else class="icon-play">▶</span>
+            </button>
+            <div class="player-info">
+              <div class="progress-container" @click="seek">
+                <div class="progress-bar" :style="{ width: progress + '%' }"></div>
+              </div>
+              <div class="time-display">
+                <span>{{ formatTime(currentTime) }}</span>
+                <span>{{ formatTime(duration) }}</span>
+              </div>
+            </div>
+            <audio ref="audioPlayer" :src="`/api/public/tracks/${track.trackId}/stream`"
+              @timeupdate="onTimeUpdate"
+              @loadedmetadata="onLoaded"
+              @ended="onEnded">
+            </audio>
+          </div>
+        </div>
+        <div v-if="track.trackSource" class="source-info">
+          <span>Исходный трек</span>
+        </div>
         <div class="track-actions">
           <template v-if="authStore.isLoggedIn && libraryStore.isOwned(track.trackId)">
             <button class="btn btn-success" @click="download">Скачать</button>
@@ -30,6 +55,7 @@
         <div class="license-card">
           <p><strong>Контракт:</strong> {{ license.licenseContractNumber }}</p>
           <p><strong>Владелец:</strong> {{ license.licenseOwnerName }}</p>
+          <p><strong>Владелец:</strong> {{ license.licenseTerms }}</p>
           <p><strong>Опубликован:</strong> {{ license.uploader}}</p>
           <p><strong>Действует:</strong> {{ formatDate(license.licenseStartDate) }} - {{ formatDate(license.licenseExpirationDate) }}</p>
         </div>
@@ -83,6 +109,48 @@ const reviews = ref([])
 const license = ref(null)
 const newRating = ref(5)
 const newComment = ref('')
+
+const audioPlayer = ref(null)
+const isPlaying = ref(false)
+const currentTime = ref(0)
+const duration = ref(0)
+const progress = ref(0)
+
+function togglePlay() {
+  if (!audioPlayer.value) return
+  if (isPlaying.value) {
+    audioPlayer.value.pause()
+  } else {
+    audioPlayer.value.play()
+  }
+  isPlaying.value = !isPlaying.value
+}
+function onTimeUpdate() {
+  if (!audioPlayer.value) return
+  currentTime.value = audioPlayer.value.currentTime
+  progress.value = (currentTime.value / duration.value) * 100
+}
+function onLoaded() {
+  if (!audioPlayer.value) return
+  duration.value = audioPlayer.value.duration
+}
+function onEnded() {
+  isPlaying.value = false
+  currentTime.value = 0
+  progress.value = 0
+}
+function seek(e) {
+  if (!audioPlayer.value || !duration.value) return
+  const rect = e.target.getBoundingClientRect()
+  const percent = (e.clientX - rect.left) / rect.width
+  audioPlayer.value.currentTime = percent * duration.value
+}
+function formatTime(s) {
+  if (!s || isNaN(s)) return '0:00'
+  const mins = Math.floor(s / 60)
+  const secs = Math.floor(s % 60)
+  return `${mins}:${secs.toString().padStart(2, '0')}`
+}
 
 function formatPrice(price) { return price ? `$${price.toFixed(2)}` : 'Бесплатно' }
 function formatDate(date) { return date ? new Date(date).toLocaleDateString() : '' }
@@ -143,6 +211,67 @@ onMounted(async () => {
 .track-meta .price { font-size: 20px; font-weight: 600; color: #2563eb; }
 .track-meta .downloads { color: #888; }
 .track-actions { display: flex; gap: 12px; }
+
+.music-player { margin: 24px 0; }
+.music-player audio { display: none; }
+.player-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  padding: 20px 24px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+.play-btn {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: none;
+  background: #2563eb;
+  color: white;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+.play-btn:hover {
+  background: #3b82f6;
+  transform: scale(1.05);
+}
+.player-info {
+  flex: 1;
+  min-width: 0;
+}
+.progress-container {
+  height: 6px;
+  background: rgba(255, 255, 255, 1);
+  border-radius: 3px;
+  cursor: pointer;
+  overflow: hidden;
+}
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #2563eb, #3b82f6);
+  border-radius: 3px;
+  transition: width 0.1s linear;
+}
+.time-display {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.7);
+}
+.icon-play, .icon-pause {
+  margin-left: 2px;
+}
+
+.source-info { margin-top: 12px; font-size: 14px; color: #666; }
+.source-info span { background: #e5e5e5; padding: 4px 8px; border-radius: 4px; }
 
 .license-section { margin-bottom: 32px; }
 .license-section h2 { font-size: 18px; margin-bottom: 12px; }

@@ -224,6 +224,28 @@ public class OrderRepository {
         saveOrderItems(conn, orderId, items);
     }
 
+    public void removeOrderTrack(Long trackId) {
+        String sql = "DELETE FROM orders_order_items WHERE order_items_track_id = ?";
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, trackId);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to remove track from orders", e);
+        }
+    }
+
+    public void removePlaylistTrack(Long trackId) {
+        String sql = "DELETE FROM playlist_tracks WHERE track_id = ?";
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, trackId);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to remove track from playlists", e);
+        }
+    }
+
     private void deleteOrderItems(Connection conn, Long orderId) throws SQLException {
         String sql = "DELETE FROM orders_order_items WHERE order_order_id = ?";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {

@@ -149,31 +149,38 @@ public class AdminController {
 
     @DeleteMapping("/albums/{albumId}")
     public ResponseEntity<?> deleteAlbum(@PathVariable Long albumId, @RequestParam("adminId") Long adminId){
-    Album album = albumRepository.findById(albumId).orElseThrow();
-    User admin = userRepository.findById(adminId).orElseThrow();
-    
-    trackRepository.findByTrackAlbum_AlbumId(albumId).forEach(track -> {
-        track.setTrackAlbum(null);
-        trackRepository.update(track);
-    });
-    
-    reviewRepository.findByReviewAlbum_AlbumId(albumId).forEach(review -> {
-        review.setReviewAlbum(null);
-        reviewRepository.update(review);
-    });
-    
-    userRepository.findAll().forEach(user -> {
-        if (user.getUserPurchasedAlbums() != null && user.getUserPurchasedAlbums().contains(album)) {
-            user.getUserPurchasedAlbums().remove(album);
-            userRepository.update(user);
+        try {
+            User admin = userRepository.findById(adminId).orElseThrow(() -> new RuntimeException("Админ не найден"));
+            Album album = albumRepository.findById(albumId).orElseThrow(() -> new RuntimeException("Альбом не найден"));
+
+            List<Track> tracks = trackRepository.findByTrackAlbum_AlbumId(albumId);
+            for (Track track : tracks) {
+                Long trackId = track.getTrackId();
+                var optLicense = licenseRepository.findByLicenseTrack_TrackId(trackId);
+                if (optLicense.isPresent()) {
+                    licenseRepository.deleteById(optLicense.get().getLicenseId());
+                }
+                orderRepository.removeOrderTrack(trackId);
+                orderRepository.removePlaylistTrack(trackId);
+                userRepository.removePurchasedTrack(trackId);
+                trackRepository.deleteById(trackId);
+            }
+
+            reviewRepository.findByReviewAlbum_AlbumId(albumId).forEach(review -> {
+                review.setReviewAlbum(null);
+                reviewRepository.update(review);
+            });
+
+            userRepository.removePurchasedAlbum(albumId);
+
+            logAction(admin, "DELETE_ALBUM", "Album", albumId, "Удален альбом: " + album.getAlbumTitle());
+
+            albumRepository.deleteById(albumId);
+            return ResponseEntity.ok("Альбом удален (вместе с треками)");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Ошибка: " + e.getMessage());
         }
-    });
-
-    logAction(admin, "DELETE_ALBUM", "Album", albumId, "Удален альбом: " + album.getAlbumTitle());
-
-    albumRepository.deleteById(albumId);
-    return ResponseEntity.ok("Альбом удален");
-
     }
 
 
@@ -260,23 +267,19 @@ public class AdminController {
         try {
             Track track = trackRepository.findById(trackId).orElseThrow(() -> new RuntimeException("Track not found"));
             User admin = userRepository.findById(adminId).orElseThrow(() -> new RuntimeException("Admin not found"));
-            
-            orderRepository.findAll().forEach(order -> {
-                if (order.getOrderItems() != null && order.getOrderItems().contains(track)) {
-                    order.getOrderItems().remove(track);
-                    orderRepository.update(order);
-                }
-            });
-            
-            userRepository.findAll().forEach(user -> {
-                if (user.getUserPurchasedTracks() != null && user.getUserPurchasedTracks().contains(track)) {
-                    user.getUserPurchasedTracks().remove(track);
-                    userRepository.update(user);
-                }
-            });
-            
+
+            var optLicense = licenseRepository.findByLicenseTrack_TrackId(trackId);
+            if (optLicense.isPresent()) {
+                licenseRepository.deleteById(optLicense.get().getLicenseId());
+            }
+
+            orderRepository.removeOrderTrack(trackId);
+            orderRepository.removePlaylistTrack(trackId);
+
+            userRepository.removePurchasedTrack(trackId);
+
             logAction(admin, "DELETE_TRACK", "Track", trackId, "Удален трек: " + track.getTrackTitle());
-            
+
             trackRepository.deleteById(trackId);
             return ResponseEntity.ok("Трек удален");
         } catch (Exception e) {
@@ -330,9 +333,11 @@ public class AdminController {
         try {
             User admin = userRepository.findById(adminId).orElseThrow(() -> new RuntimeException("Админ не найден"));
             Genre genre = genreRepository.findById(genreId).orElseThrow(() -> new RuntimeException("Жанр не найден"));
-            
+
+            genreRepository.removeGenreFromAllTracks(genreId);
+
             logAction(admin, "DELETE_GENRE", "Genre", genreId, "Удален жанр: " + genre.getGenreName());
-            
+
             genreRepository.deleteById(genreId);
             return ResponseEntity.ok("Жанр удален");
         } catch (Exception e) {
@@ -373,6 +378,113 @@ public class AdminController {
             }
             
             return ResponseEntity.ok("Артист обновлен");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Ошибка: " + e.getMessage());
+        }
+    }
+
+    @DeleteMapping("/artists/{artistId}")
+    public ResponseEntity<?> deleteArtist(@PathVariable Long artistId, @RequestParam("adminId") Long adminId) {
+        try {
+            User admin = userRepository.findById(adminId).orElseThrow(() -> new RuntimeException("Админ не найден"));
+            Artist artist = artistRepository.findById(artistId).orElseThrow(() -> new RuntimeException("Артист не найден"));
+
+            List<Track> tracks = trackRepository.findByTrackArtist_ArtistId(artistId);
+            for (Track track : tracks) {
+                Long trackId = track.getTrackId();
+                var optLicense = licenseRepository.findByLicenseTrack_TrackId(trackId);
+                if (optLicense.isPresent()) {
+                    licenseRepository.deleteById(optLicense.get().getLicenseId());
+                }
+                orderRepository.removeOrderTrack(trackId);
+                orderRepository.removePlaylistTrack(trackId);
+                userRepository.removePurchasedTrack(trackId);
+                trackRepository.deleteById(trackId);
+            }
+
+            List<Album> albums = albumRepository.findByAlbumArtist_ArtistId(artistId);
+            for (Album album : albums) {
+                List<Track> albumTracks = trackRepository.findByTrackAlbum_AlbumId(album.getAlbumId());
+                for (Track track : albumTracks) {
+                    Long trackId = track.getTrackId();
+var optLicense = licenseRepository.findByLicenseTrack_TrackId(trackId);
+                if (optLicense.isPresent()) {
+                    licenseRepository.deleteById(optLicense.get().getLicenseId());
+                }
+                orderRepository.removeOrderTrack(trackId);
+                orderRepository.removePlaylistTrack(trackId);
+                userRepository.removePurchasedTrack(trackId);
+                trackRepository.deleteById(trackId);
+                }
+                reviewRepository.findByReviewAlbum_AlbumId(album.getAlbumId()).forEach(review -> {
+                    review.setReviewAlbum(null);
+                    reviewRepository.update(review);
+                });
+                userRepository.removePurchasedAlbum(album.getAlbumId());
+                albumRepository.deleteById(album.getAlbumId());
+            }
+
+            logAction(admin, "DELETE_ARTIST", "Artist", artistId, "Удален артист: " + artist.getArtistName());
+
+            artistRepository.deleteByArtistId(artistId);
+            return ResponseEntity.ok("Артист удален (вместе с ал��бомами и треками)");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Ошибка: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/addtrack")
+    public ResponseEntity<?> addTrack(
+            @RequestParam("title") String title,
+            @RequestParam("price") Double price,
+            @RequestParam("artistId") Long artistId,
+            @RequestParam(value = "albumId", required = false) Long albumId,
+            @RequestParam("adminId") Long adminId,
+            @RequestParam("licenseTerms") String terms,
+            @RequestParam(value = "genreIds", required = false) List<Long> genreIds
+    ) {
+        try {
+            User admin = userRepository.findById(adminId).orElseThrow(() -> new RuntimeException("Админ не найден"));
+            Artist artist = artistRepository.findById(artistId).orElseThrow(() -> new RuntimeException("Артист не найден"));
+
+            Album album = null;
+            if (albumId != null) {
+                album = albumRepository.findById(albumId).orElseThrow(() -> new RuntimeException("Альбом не найден"));
+            }
+
+            Track track = new Track();
+            track.setTrackTitle(title);
+            track.setTrackPrice(price);
+            track.setTrackArtist(artist);
+            track.setTrackAlbum(album);
+            track.setTrackUploadedBy(admin);
+            track.setTrackFilePath("");
+            track.setTrackDownloadCount(0L);
+
+            if (genreIds != null && !genreIds.isEmpty()) {
+                List<Genre> genres = new ArrayList<>();
+                for (Long gid : genreIds) {
+                    genreRepository.findById(gid).ifPresent(genres::add);
+                }
+                track.setTrackGenres(genres);
+            }
+
+            Track saved = trackRepository.save(track);
+
+            License license = new License();
+            license.setLicenseTrack(saved);
+            license.setLicenseTerms(terms);
+            license.setLicenseContractNumber("CONTRACT-" + saved.getTrackId());
+            license.setLicenseOwnerName(artist.getArtistName());
+            license.setLicenseStartDate(java.time.LocalDate.now());
+            license.setLicenseExpirationDate(java.time.LocalDate.now().plusYears(1));
+            license.setUploader(admin.getUserUsername());
+            licenseRepository.save(license);
+
+            logAction(admin, "ADD_TRACK", "Track", saved.getTrackId(),
+                    "Добавлен трек: " + title + " (артист: " + artist.getArtistName() + ")");
+
+            return ResponseEntity.ok("Трек добавлен! ID: " + saved.getTrackId());
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Ошибка: " + e.getMessage());
         }
