@@ -1,14 +1,14 @@
 <template>
-  <router-link :to="`/artist/${artist.artistId}`" class="artist-card">
-    <div class="avatar">
+  <router-link :to="`/artist/${artist.artistId}`" class="artist-card" data-testid="artist-card">
+    <div class="avatar" data-testid="artist-avatar">
       <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
         <circle cx="12" cy="8" r="4"/>
         <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
       </svg>
     </div>
-    <div class="info">
-      <h4>{{ artist.artistName }}</h4>
-      <p v-if="artist.artistRating">★ {{ artist.artistRating }}</p>
+    <div class="info" data-testid="artist-info">
+      <h4 data-testid="artist-name">{{ artist.artistName }}</h4>
+      <p v-if="artist.artistRating" data-testid="artist-rating">★ {{ artist.artistRating }}</p>
     </div>
   </router-link>
 </template>

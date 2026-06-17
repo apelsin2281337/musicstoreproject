@@ -1,34 +1,34 @@
 <template>
-  <div class="library-page container">
-    <h1 class="page-title">Медиатека</h1>
+  <div class="library-page container" data-testid="library-page">
+    <h1 class="page-title" data-testid="library-title">Медиатека</h1>
 
-    <div v-if="libraryStore.loading" class="loading"><div class="spinner"></div></div>
-    <div v-else-if="libraryStore.tracks.length === 0" class="empty-state">
+    <div v-if="libraryStore.loading" class="loading" data-testid="loading-spinner"><div class="spinner"></div></div>
+    <div v-else-if="libraryStore.tracks.length === 0" class="empty-state" data-testid="library-empty">
       <p>Нет купленных треков</p>
-      <router-link to="/browse" class="btn">Каталог</router-link>
+      <router-link to="/browse" class="btn" data-testid="library-catalog-link">Каталог</router-link>
     </div>
-    <div v-else class="track-list">
-      <div v-for="t in libraryStore.tracks" :key="t.trackId" class="track-item">
+    <div v-else class="track-list" data-testid="library-track-list">
+      <div v-for="t in libraryStore.tracks" :key="t.trackId" class="track-item" data-testid="library-track-item">
         <div class="track-info">
-          <h4>{{ t.trackTitle }}</h4>
-          <p>{{ t.trackArtist?.artistName }}</p>
+          <h4 data-testid="library-track-title">{{ t.trackTitle }}</h4>
+          <p data-testid="library-track-artist">{{ t.trackArtist?.artistName }}</p>
         </div>
         <div class="actions">
-          <button class="btn btn-sm btn-playlist" @click="openPlaylistModal(t)">+</button>
-          <button class="btn btn-sm btn-success" @click="download(t)">↓</button>
+          <button class="btn btn-sm btn-playlist" @click="openPlaylistModal(t)" data-testid="library-playlist-btn">+</button>
+          <button class="btn btn-sm btn-success" @click="download(t)" data-testid="library-download-btn">↓</button>
         </div>
       </div>
     </div>
 
-    <div v-if="showPlaylistModal" class="modal" @click.self="showPlaylistModal = false">
-      <div class="modal-content">
-        <h3>Добавить в плейлист</h3>
-        <div class="playlist-list">
-          <button v-for="p in libraryStore.playlists" :key="p.playlistId" class="playlist-btn" @click="addToPlaylist(p)">
+    <div v-if="showPlaylistModal" class="modal" @click.self="showPlaylistModal = false" data-testid="library-playlist-modal">
+      <div class="modal-content" data-testid="library-playlist-modal-content">
+        <h3 data-testid="library-playlist-modal-title">Добавить в плейлист</h3>
+        <div class="playlist-list" data-testid="library-playlist-list">
+          <button v-for="p in libraryStore.playlists" :key="p.playlistId" class="playlist-btn" @click="addToPlaylist(p)" data-testid="library-playlist-item">
             {{ p.playlistTitle }}
           </button>
         </div>
-        <button class="btn btn-secondary" @click="showPlaylistModal = false">Отмена</button>
+        <button class="btn btn-secondary" @click="showPlaylistModal = false" data-testid="library-playlist-cancel">Отмена</button>
       </div>
     </div>
   </div>

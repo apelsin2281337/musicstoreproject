@@ -1,31 +1,31 @@
 <template>
-  <div class="playlist-view container">
-    <div v-if="loading" class="loading"><div class="spinner"></div></div>
+  <div class="playlist-view container" data-testid="playlist-view">
+    <div v-if="loading" class="loading" data-testid="loading-spinner"><div class="spinner"></div></div>
     <template v-else-if="playlist">
       <div class="header">
         <div>
-          <h1 class="page-title">{{ playlist.playlistTitle }}</h1>
-          <p class="subtitle">{{ tracks.length }} треков</p>
+          <h1 class="page-title" data-testid="playlist-title">{{ playlist.playlistTitle }}</h1>
+          <p class="subtitle" data-testid="playlist-track-count">{{ tracks.length }} треков</p>
         </div>
-        <button class="btn btn-secondary" @click="goBack">Назад</button>
+        <button class="btn btn-secondary" @click="goBack" data-testid="playlist-back-btn">Назад</button>
       </div>
 
-<div v-if="tracks.length === 0" class="empty-state">
+<div v-if="tracks.length === 0" class="empty-state" data-testid="playlist-empty">
           <p>В плейлисте нет треков</p>
-          <router-link to="/browse" class="btn">Каталог</router-link>
+          <router-link to="/browse" class="btn" data-testid="playlist-catalog-link">Каталог</router-link>
         </div>
-        <div v-else class="track-list">
-        <div v-for="t in tracks" :key="t.trackId" class="track-item">
+        <div v-else class="track-list" data-testid="playlist-track-list">
+        <div v-for="t in tracks" :key="t.trackId" class="track-item" data-testid="playlist-track-item">
           <div class="track-info">
-            <router-link :to="`/track/${t.trackId}`" class="track-title">{{ t.trackTitle }}</router-link>
-            <p>{{ t.trackArtist?.artistName }}</p>
+            <router-link :to="`/track/${t.trackId}`" class="track-title" data-testid="playlist-track-link">{{ t.trackTitle }}</router-link>
+            <p data-testid="playlist-track-artist">{{ t.trackArtist?.artistName }}</p>
           </div>
-          <button class="btn btn-sm btn-success" @click="download(t)">↓</button>
-          <button class="btn btn-sm btn-danger" @click="removeTrack(t)">×</button>
+          <button class="btn btn-sm btn-success" @click="download(t)" data-testid="playlist-download-btn">↓</button>
+          <button class="btn btn-sm btn-danger" @click="removeTrack(t)" data-testid="playlist-remove-btn">×</button>
         </div>
       </div>
     </template>
-    <div v-else class="empty-state"><p>Плейлист не найден</p></div>
+    <div v-else class="empty-state" data-testid="playlist-not-found"><p>Плейлист не найден</p></div>
   </div>
 </template>
 

@@ -33,5 +33,20 @@ services:
     volumes:
       - ./src/main/resources/uploads:/app/uploads
 
+  frontend:
+    build: ./frontend
+    container_name: musicstore_frontend
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    environment:
+      VITE_API_URL: http://backend:8080
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+      - ./frontend/index.html:/app/index.html
+      - ./frontend/vite.config.js:/app/vite.config.js
+
 volumes:
   postgres_data:

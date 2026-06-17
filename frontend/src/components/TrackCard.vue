@@ -1,40 +1,40 @@
 <template>
-  <div class="track-card">
-    <div class="cover">
+  <div class="track-card" data-testid="track-card">
+    <div class="cover" data-testid="track-cover">
       <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
         <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
       </svg>
     </div>
-    <div class="info">
-      <router-link :to="`/track/${track.trackId}`" class="title-link">{{ track.trackTitle }}</router-link>
-      <p class="artist">{{ track.trackArtist?.artistName || '—' }}</p>
+    <div class="info" data-testid="track-info">
+      <router-link :to="`/track/${track.trackId}`" class="title-link" data-testid="track-title-link">{{ track.trackTitle }}</router-link>
+      <p class="artist" data-testid="track-artist">{{ track.trackArtist?.artistName || '—' }}</p>
     </div>
-    <div class="right">
-      <span class="price">{{ formatPrice(track.trackPrice) }}</span>
+    <div class="right" data-testid="track-actions">
+      <span class="price" data-testid="track-price">{{ formatPrice(track.trackPrice) }}</span>
       <template v-if="authStore.isLoggedIn && libraryStore.isOwned(track.trackId)">
-        <button class="btn btn-sm btn-success" @click="download">↓</button>
-        <button class="btn btn-sm btn-playlist" @click="showPlaylistModal = true" title="В плейлист">+</button>
+        <button class="btn btn-sm btn-success" @click="download" data-testid="track-download-btn">↓</button>
+        <button class="btn btn-sm btn-playlist" @click="showPlaylistModal = true" title="В плейлист" data-testid="track-playlist-btn">+</button>
       </template>
       <template v-else-if="authStore.isLoggedIn">
-        <button v-if="!cartStore.isInCart(track.trackId)" class="btn btn-sm" @click="addToCart">+</button>
-        <span v-else class="added">✓</span>
+        <button v-if="!cartStore.isInCart(track.trackId)" class="btn btn-sm" @click="addToCart" data-testid="track-add-cart-btn">+</button>
+        <span v-else class="added" data-testid="track-in-cart">✓</span>
       </template>
       <template v-else>
-        <router-link to="/login" class="btn btn-sm">Войти</router-link>
+        <router-link to="/login" class="btn btn-sm" data-testid="track-login-link">Войти</router-link>
       </template>
     </div>
   </div>
 
-  <div v-if="showPlaylistModal" class="modal" @click.self="showPlaylistModal = false">
-    <div class="modal-content">
-      <h3>Добавить в плейлист</h3>
-      <div class="playlist-list">
-        <button v-for="p in libraryStore.playlists" :key="p.playlistId" class="playlist-btn" :class="{ 'in-playlist': isInPlaylist(p) }" @click="addToPlaylist(p)">
+  <div v-if="showPlaylistModal" class="modal" @click.self="showPlaylistModal = false" data-testid="track-playlist-modal">
+    <div class="modal-content" data-testid="track-playlist-modal-content">
+      <h3 data-testid="track-playlist-modal-title">Добавить в плейлист</h3>
+      <div class="playlist-list" data-testid="track-playlist-list">
+        <button v-for="p in libraryStore.playlists" :key="p.playlistId" class="playlist-btn" :class="{ 'in-playlist': isInPlaylist(p) }" @click="addToPlaylist(p)" data-testid="track-playlist-item">
           <span v-if="isInPlaylist(p)" class="check">✓</span>
           {{ p.playlistTitle }}
         </button>
       </div>
-      <button class="btn btn-secondary" @click="showPlaylistModal = false">Отмена</button>
+      <button class="btn btn-secondary" @click="showPlaylistModal = false" data-testid="track-playlist-cancel">Отмена</button>
     </div>
   </div>
 </template>

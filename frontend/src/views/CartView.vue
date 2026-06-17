@@ -1,40 +1,40 @@
 <template>
-  <div class="cart-page container">
-    <h1 class="page-title">Корзина</h1>
+  <div class="cart-page container" data-testid="cart-page">
+    <h1 class="page-title" data-testid="cart-title">Корзина</h1>
 
-    <div v-if="cartStore.isEmpty" class="empty-state">
+    <div v-if="cartStore.isEmpty" class="empty-state" data-testid="cart-empty">
       <p>Корзина пуста</p>
-      <router-link to="/browse" class="btn">Каталог</router-link>
+      <router-link to="/browse" class="btn" data-testid="cart-catalog-link">Каталог</router-link>
     </div>
 
     <div v-else class="cart-layout">
-      <div class="items">
-        <div v-for="item in cartStore.albums" :key="item.albumId" class="item album-item">
+      <div class="items" data-testid="cart-items">
+        <div v-for="item in cartStore.albums" :key="item.albumId" class="item album-item" data-testid="cart-album-item">
           <div class="item-info">
-            <h4>{{ item.albumTitle }}</h4>
-            <p>{{ item.albumArtist?.artistName }}</p>
-            <span class="item-type">Альбом</span>
+            <h4 data-testid="cart-item-title">{{ item.albumTitle }}</h4>
+            <p data-testid="cart-item-artist">{{ item.albumArtist?.artistName }}</p>
+            <span class="item-type" data-testid="cart-item-type">Альбом</span>
           </div>
-          <span class="price">{{ formatPrice(item.albumPrice) }}</span>
-          <button class="btn btn-link" @click="removeAlbum(item.albumId)">Удалить</button>
+          <span class="price" data-testid="cart-item-price">{{ formatPrice(item.albumPrice) }}</span>
+          <button class="btn btn-link" @click="removeAlbum(item.albumId)" data-testid="cart-remove-btn">Удалить</button>
         </div>
-        <div v-for="item in cartStore.items" :key="item.trackId" class="item">
+        <div v-for="item in cartStore.items" :key="item.trackId" class="item" data-testid="cart-track-item">
           <div class="item-info">
-            <h4>{{ item.trackTitle }}</h4>
-            <p>{{ item.trackArtist?.artistName }}</p>
-            <span class="item-type">Трек</span>
+            <h4 data-testid="cart-item-title">{{ item.trackTitle }}</h4>
+            <p data-testid="cart-item-artist">{{ item.trackArtist?.artistName }}</p>
+            <span class="item-type" data-testid="cart-item-type">Трек</span>
           </div>
-          <span class="price">{{ formatPrice(item.trackPrice) }}</span>
-          <button class="btn btn-link" @click="removeItem(item.trackId)">Удалить</button>
+          <span class="price" data-testid="cart-item-price">{{ formatPrice(item.trackPrice) }}</span>
+          <button class="btn btn-link" @click="removeItem(item.trackId)" data-testid="cart-remove-btn">Удалить</button>
         </div>
       </div>
 
-      <div class="summary">
-        <p>Итого: {{ formatPrice(cartStore.total) }}</p>
-        <button class="btn btn-success" :disabled="!authStore.isLoggedIn || cartStore.loading" @click="checkout">
+      <div class="summary" data-testid="cart-summary">
+        <p data-testid="cart-total">Итого: {{ formatPrice(cartStore.total) }}</p>
+        <button class="btn btn-success" :disabled="!authStore.isLoggedIn || cartStore.loading" @click="checkout" data-testid="cart-checkout-btn">
           {{ cartStore.loading ? '...' : 'Оформить' }}
         </button>
-        <p v-if="!authStore.isLoggedIn"><router-link to="/login">Войдите</router-link> для заказа</p>
+        <p v-if="!authStore.isLoggedIn"><router-link to="/login" data-testid="cart-login-link">Войдите</router-link> для заказа</p>
       </div>
     </div>
   </div>

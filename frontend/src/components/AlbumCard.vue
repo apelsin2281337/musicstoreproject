@@ -1,15 +1,15 @@
 <template>
-  <router-link :to="`/album/${album.albumId}`" class="album-card">
-    <div class="cover">
+  <router-link :to="`/album/${album.albumId}`" class="album-card" data-testid="album-card">
+    <div class="cover" data-testid="album-cover">
       <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor" opacity="0.4">
         <circle cx="12" cy="12" r="10"/>
         <circle cx="12" cy="12" r="3"/>
       </svg>
     </div>
-    <div class="info">
-      <h4>{{ album.albumTitle }}</h4>
-      <p>{{ album.albumArtist?.artistName || '—' }}</p>
-      <span v-if="album.albumReleaseYear" class="year">{{ album.albumReleaseYear }}</span>
+    <div class="info" data-testid="album-info">
+      <h4 data-testid="album-title">{{ album.albumTitle }}</h4>
+      <p data-testid="album-artist">{{ album.albumArtist?.artistName || '—' }}</p>
+      <span v-if="album.albumReleaseYear" class="year" data-testid="album-year">{{ album.albumReleaseYear }}</span>
     </div>
   </router-link>
 </template>

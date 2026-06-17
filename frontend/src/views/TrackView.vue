@@ -1,30 +1,30 @@
 <template>
-  <div class="track-page container">
-    <div v-if="musicStore.loading" class="loading"><div class="spinner"></div></div>
+  <div class="track-page container" data-testid="track-page">
+    <div v-if="musicStore.loading" class="loading" data-testid="loading-spinner"><div class="spinner"></div></div>
     <template v-else-if="track">
-      <div class="track-header">
-        <h1>{{ track.trackTitle }}</h1>
+      <div class="track-header" data-testid="track-header">
+        <h1 data-testid="track-title">{{ track.trackTitle }}</h1>
         <p>
-          <router-link :to="`/artist/${track.trackArtist?.artistId}`">{{ track.trackArtist?.artistName }}</router-link>
-          <span v-if="track.trackAlbum"> - <router-link :to="`/album/${track.trackAlbum.albumId}`">{{ track.trackAlbum.albumTitle }}</router-link></span>
+          <router-link :to="`/artist/${track.trackArtist?.artistId}`" data-testid="track-artist-link">{{ track.trackArtist?.artistName }}</router-link>
+          <span v-if="track.trackAlbum"> - <router-link :to="`/album/${track.trackAlbum.albumId}`" data-testid="track-album-link">{{ track.trackAlbum.albumTitle }}</router-link></span>
         </p>
-        <div class="track-meta">
-          <span class="price">{{ formatPrice(track.trackPrice) }}</span>
-          <span class="downloads">{{ track.trackDownloadCount || 0 }} скачиваний</span>
+        <div class="track-meta" data-testid="track-meta">
+          <span class="price" data-testid="track-price">{{ formatPrice(track.trackPrice) }}</span>
+          <span class="downloads" data-testid="track-downloads">{{ track.trackDownloadCount || 0 }} скачиваний</span>
         </div>
-        <div class="music-player">
+        <div class="music-player" data-testid="music-player">
           <div class="player-wrapper">
-            <button class="play-btn" @click="togglePlay">
+            <button class="play-btn" @click="togglePlay" data-testid="player-play-btn">
               <span v-if="isPlaying" class="icon-pause">⏸</span>
               <span v-else class="icon-play">▶</span>
             </button>
             <div class="player-info">
-              <div class="progress-container" @click="seek">
+              <div class="progress-container" @click="seek" data-testid="player-progress">
                 <div class="progress-bar" :style="{ width: progress + '%' }"></div>
               </div>
-              <div class="time-display">
-                <span>{{ formatTime(currentTime) }}</span>
-                <span>{{ formatTime(duration) }}</span>
+              <div class="time-display" data-testid="player-time">
+                <span data-testid="player-current-time">{{ formatTime(currentTime) }}</span>
+                <span data-testid="player-duration">{{ formatTime(duration) }}</span>
               </div>
             </div>
             <audio ref="audioPlayer" :src="`/api/public/tracks/${track.trackId}/stream`"
@@ -34,58 +34,58 @@
             </audio>
           </div>
         </div>
-        <div v-if="track.trackSource" class="source-info">
+        <div v-if="track.trackSource" class="source-info" data-testid="track-source-info">
           <span>Исходный трек</span>
         </div>
-        <div class="track-actions">
+        <div class="track-actions" data-testid="track-actions">
           <template v-if="authStore.isLoggedIn && libraryStore.isOwned(track.trackId)">
-            <button class="btn btn-success" @click="download">Скачать</button>
+            <button class="btn btn-success" @click="download" data-testid="track-download-btn">Скачать</button>
           </template>
           <template v-else-if="authStore.isLoggedIn">
-            <button class="btn btn-primary" @click="buy">Купить</button>
+            <button class="btn btn-primary" @click="buy" data-testid="track-buy-btn">Купить</button>
           </template>
           <template v-else>
-            <router-link to="/login" class="btn btn-primary">Войти</router-link>
+            <router-link to="/login" class="btn btn-primary" data-testid="track-login-link">Войти</router-link>
           </template>
         </div>
       </div>
 
-      <section v-if="license" class="license-section">
-        <h2>Лицензия</h2>
-        <div class="license-card">
-          <p><strong>Контракт:</strong> {{ license.licenseContractNumber }}</p>
-          <p><strong>Владелец:</strong> {{ license.licenseOwnerName }}</p>
-          <p><strong>Владелец:</strong> {{ license.licenseTerms }}</p>
-          <p><strong>Опубликован:</strong> {{ license.uploader}}</p>
-          <p><strong>Действует:</strong> {{ formatDate(license.licenseStartDate) }} - {{ formatDate(license.licenseExpirationDate) }}</p>
+      <section v-if="license" class="license-section" data-testid="license-section">
+        <h2 data-testid="license-title">Лицензия</h2>
+        <div class="license-card" data-testid="license-card">
+          <p data-testid="license-contract"><strong>Контракт:</strong> {{ license.licenseContractNumber }}</p>
+          <p data-testid="license-owner"><strong>Владелец:</strong> {{ license.licenseOwnerName }}</p>
+          <p data-testid="license-terms"><strong>Владелец:</strong> {{ license.licenseTerms }}</p>
+          <p data-testid="license-uploader"><strong>Опубликован:</strong> {{ license.uploader}}</p>
+          <p data-testid="license-dates"><strong>Действует:</strong> {{ formatDate(license.licenseStartDate) }} - {{ formatDate(license.licenseExpirationDate) }}</p>
         </div>
       </section>
 
-      <section class="reviews-section">
-        <h2>Отзывы</h2>
-        <div v-if="authStore.isLoggedIn" class="review-form">
-          <select v-model="newRating">
+      <section class="reviews-section" data-testid="reviews-section">
+        <h2 data-testid="reviews-title">Отзывы</h2>
+        <div v-if="authStore.isLoggedIn" class="review-form" data-testid="review-form">
+          <select v-model="newRating" data-testid="review-rating-select">
             <option :value="1">1</option>
             <option :value="2">2</option>
             <option :value="3">3</option>
             <option :value="4">4</option>
             <option :value="5">5</option>
           </select>
-          <input v-model="newComment" placeholder="Комментарий" />
-          <button @click="submitReview" class="btn">Отправить</button>
+          <input v-model="newComment" placeholder="Комментарий" data-testid="review-comment-input" />
+          <button @click="submitReview" class="btn" data-testid="review-submit-btn">Отправить</button>
         </div>
-        <div v-for="r in reviews" :key="r.reviewId" class="review-card">
+        <div v-for="r in reviews" :key="r.reviewId" class="review-card" data-testid="review-card">
           <div class="review-header">
-            <span class="author">{{ r.reviewUser?.userUsername || 'Аноним' }}</span>
-            <span class="rating">{{ r.reviewRating }}/5</span>
-            <span class="date">{{ new Date(r.reviewDate).toLocaleDateString() }}</span>
+            <span class="author" data-testid="review-author">{{ r.reviewUser?.userUsername || 'Аноним' }}</span>
+            <span class="rating" data-testid="review-rating">{{ r.reviewRating }}/5</span>
+            <span class="date" data-testid="review-date">{{ new Date(r.reviewDate).toLocaleDateString() }}</span>
           </div>
-          <p>{{ r.reviewComment }}</p>
+          <p data-testid="review-comment">{{ r.reviewComment }}</p>
         </div>
-        <p v-if="reviews.length === 0">Пока нет отзывов</p>
+        <p v-if="reviews.length === 0" data-testid="reviews-empty">Пока нет отзывов</p>
       </section>
     </template>
-    <div v-else class="empty-state"><p>Трек не найден</p></div>
+    <div v-else class="empty-state" data-testid="track-not-found"><p>Трек не найден</p></div>
   </div>
 </template>
 

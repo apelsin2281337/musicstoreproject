@@ -1,37 +1,37 @@
 <template>
-  <div class="browse container">
+  <div class="browse container" data-testid="browse-page">
     <div class="page-header">
-      <h1 class="page-title">Каталог</h1>
+      <h1 class="page-title" data-testid="browse-title">Каталог</h1>
     </div>
 
-    <div class="filters">
-      <input v-model="searchQuery" type="text" placeholder="Поиск..." class="form-input" style="max-width: 300px;" />
-      <div class="tabs">
-        <button :class="{ active: activeTab === 'tracks' }" @click="activeTab = 'tracks'">Треки</button>
-        <button :class="{ active: activeTab === 'artists' }" @click="activeTab = 'artists'">Артисты</button>
-        <button :class="{ active: activeTab === 'albums' }" @click="activeTab = 'albums'">Альбомы</button>
-        <button :class="{ active: activeTab === 'genres' }" @click="activeTab = 'genres'">Жанры</button>
-        <button :class="{ active: activeTab === 'playlists'}" @click="activeTab = 'playlists'">Плейлисты</button>
+    <div class="filters" data-testid="browse-filters">
+      <input v-model="searchQuery" type="text" placeholder="Поиск..." class="form-input" style="max-width: 300px;" data-testid="browse-search-input" />
+      <div class="tabs" data-testid="browse-tabs">
+        <button :class="{ active: activeTab === 'tracks' }" @click="activeTab = 'tracks'" data-testid="browse-tab-tracks">Треки</button>
+        <button :class="{ active: activeTab === 'artists' }" @click="activeTab = 'artists'" data-testid="browse-tab-artists">Артисты</button>
+        <button :class="{ active: activeTab === 'albums' }" @click="activeTab = 'albums'" data-testid="browse-tab-albums">Альбомы</button>
+        <button :class="{ active: activeTab === 'genres' }" @click="activeTab = 'genres'" data-testid="browse-tab-genres">Жанры</button>
+        <button :class="{ active: activeTab === 'playlists'}" @click="activeTab = 'playlists'" data-testid="browse-tab-playlists">Плейлисты</button>
       </div>
     </div>
 
-    <div v-if="musicStore.loading" class="loading"><div class="spinner"></div></div>
+    <div v-if="musicStore.loading" class="loading" data-testid="loading-spinner"><div class="spinner"></div></div>
     <div v-else-if="activeTab === 'tracks'">
-      <div v-if="filteredTracks.length === 0" class="empty-state"><p>Не найдено</p></div>
-      <div v-else class="track-list"><TrackCard v-for="t in filteredTracks" :key="t.trackId" :track="t" /></div>
+      <div v-if="filteredTracks.length === 0" class="empty-state" data-testid="empty-tracks"><p>Не найдено</p></div>
+      <div v-else class="track-list" data-testid="browse-tracks-list"><TrackCard v-for="t in filteredTracks" :key="t.trackId" :track="t" /></div>
     </div>
     <div v-else-if="activeTab === 'artists'">
-      <div v-if="filteredArtists.length === 0" class="empty-state"><p>Не найдено</p></div>
-      <div v-else class="grid"><ArtistCard v-for="a in filteredArtists" :key="a.artistId" :artist="a" /></div>
+      <div v-if="filteredArtists.length === 0" class="empty-state" data-testid="empty-artists"><p>Не найдено</p></div>
+      <div v-else class="grid" data-testid="browse-artists-grid"><ArtistCard v-for="a in filteredArtists" :key="a.artistId" :artist="a" /></div>
     </div>
     <div v-else-if="activeTab === 'albums'">
-      <div v-if="filteredAlbums.length === 0" class="empty-state"><p>Не найдено</p></div>
-      <div v-else class="grid"><AlbumCard v-for="a in filteredAlbums" :key="a.albumId" :album="a" /></div>
+      <div v-if="filteredAlbums.length === 0" class="empty-state" data-testid="empty-albums"><p>Не найдено</p></div>
+      <div v-else class="grid" data-testid="browse-albums-grid"><AlbumCard v-for="a in filteredAlbums" :key="a.albumId" :album="a" /></div>
     </div>
     <div v-else-if="activeTab === 'genres'">
-      <div v-if="musicStore.genres.length === 0" class="empty-state"><p>Жанры не найдены</p></div>
-      <div v-else class="grid">
-        <router-link v-for="g in musicStore.genres" :key="g.genreId" :to="`/genre/${g.genreId}`" class="genre-card">
+      <div v-if="musicStore.genres.length === 0" class="empty-state" data-testid="empty-genres"><p>Жанры не найдены</p></div>
+      <div v-else class="grid" data-testid="browse-genres-grid">
+        <router-link v-for="g in musicStore.genres" :key="g.genreId" :to="`/genre/${g.genreId}`" class="genre-card" data-testid="genre-card">
           <h4>{{ g.genreName }}</h4>
         </router-link>
       </div>

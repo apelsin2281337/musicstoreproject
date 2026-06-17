@@ -1,0 +1,10 @@
+node_modules
+dist
+.git
+.idea
+.vscode
+tests
+playwright-report
+playwright.config.js
+README.md
+.gitignore

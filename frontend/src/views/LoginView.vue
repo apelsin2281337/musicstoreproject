@@ -1,20 +1,20 @@
 <template>
-  <div class="auth-page">
-    <div class="auth-card">
-      <h1>Вход</h1>
-      <div v-if="authStore.error" class="alert alert-error">{{ authStore.error }}</div>
-      <form @submit.prevent="handleLogin">
+  <div class="auth-page" data-testid="login-page">
+    <div class="auth-card" data-testid="login-card">
+      <h1 data-testid="login-title">Вход</h1>
+      <div v-if="authStore.error" class="alert alert-error" data-testid="login-error">{{ authStore.error }}</div>
+      <form @submit.prevent="handleLogin" data-testid="login-form">
         <div class="form-group">
-          <label class="form-label">Имя пользователя</label>
-          <input v-model="username" type="text" class="form-input" required />
+          <label class="form-label" data-testid="login-username-label">Имя пользователя</label>
+          <input v-model="username" type="text" class="form-input" required data-testid="login-username-input" />
         </div>
         <div class="form-group">
-          <label class="form-label">Пароль</label>
-          <input v-model="password" type="password" class="form-input" required />
+          <label class="form-label" data-testid="login-password-label">Пароль</label>
+          <input v-model="password" type="password" class="form-input" required data-testid="login-password-input" />
         </div>
-        <button type="submit" class="btn" :disabled="authStore.loading">{{ authStore.loading ? '...' : 'Войти' }}</button>
+        <button type="submit" class="btn" :disabled="authStore.loading" data-testid="login-submit-btn">{{ authStore.loading ? '...' : 'Войти' }}</button>
       </form>
-      <p class="footer">Нет аккаунта? <router-link to="/register">Регистрация</router-link></p>
+      <p class="footer" data-testid="login-register-link">Нет аккаунта? <router-link to="/register">Регистрация</router-link></p>
     </div>
   </div>
 </template>

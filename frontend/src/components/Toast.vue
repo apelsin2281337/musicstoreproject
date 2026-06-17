@@ -1,7 +1,7 @@
 <template>
   <Teleport to="body">
-    <div class="toast-container">
-      <div v-for="t in toasts" :key="t.id" :class="['toast', `toast-${t.type}`]">
+    <div class="toast-container" data-testid="toast-container">
+      <div v-for="t in toasts" :key="t.id" :class="['toast', `toast-${t.type}`]" data-testid="toast-item">
         {{ t.message }}
       </div>
     </div>

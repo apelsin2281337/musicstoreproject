@@ -1,63 +1,63 @@
 <template>
-  <div class="album-page container">
-    <div v-if="musicStore.loading" class="loading"><div class="spinner"></div></div>
+  <div class="album-page container" data-testid="album-page">
+    <div v-if="musicStore.loading" class="loading" data-testid="loading-spinner"><div class="spinner"></div></div>
     <template v-else-if="album">
-      <div class="album-header">
-        <h1>{{ album.albumTitle }}</h1>
-        <p><router-link :to="`/artist/${album.albumArtist?.artistId}`">{{ album.albumArtist?.artistName }}</router-link> - {{ album.albumReleaseYear }}</p>
-        <div class="album-buy">
-          <span class="price">{{ formatPrice(album.albumPrice) }}</span>
+      <div class="album-header" data-testid="album-header">
+        <h1 data-testid="album-title">{{ album.albumTitle }}</h1>
+        <p><router-link :to="`/artist/${album.albumArtist?.artistId}`" data-testid="album-artist-link">{{ album.albumArtist?.artistName }}</router-link> - <span data-testid="album-year">{{ album.albumReleaseYear }}</span></p>
+        <div class="album-buy" data-testid="album-buy">
+          <span class="price" data-testid="album-price">{{ formatPrice(album.albumPrice) }}</span>
           <template v-if="authStore.isLoggedIn">
-            <button v-if="!cartStore.isAlbumInCart(album.albumId)" class="btn btn-primary" @click="addAlbumToCart">В корзину</button>
-            <span v-else>В корзине</span>
+            <button v-if="!cartStore.isAlbumInCart(album.albumId)" class="btn btn-primary" @click="addAlbumToCart" data-testid="album-add-cart-btn">В корзину</button>
+            <span v-else data-testid="album-in-cart">В корзине</span>
           </template>
           <template v-else>
-            <router-link to="/login" class="btn btn-primary">Войти</router-link>
+            <router-link to="/login" class="btn btn-primary" data-testid="album-login-link">Войти</router-link>
           </template>
         </div>
       </div>
-      <div class="tracklist">
-        <div v-for="(t, i) in albumTracks" :key="t.trackId" class="track-row">
+      <div class="tracklist" data-testid="album-tracklist">
+        <div v-for="(t, i) in albumTracks" :key="t.trackId" class="track-row" data-testid="album-track-row">
           <span>{{ i + 1 }}</span>
-          <div class="info"><router-link :to="`/track/${t.trackId}`"><h4>{{ t.trackTitle }}</h4></router-link></div>
-          <span class="price">{{ formatPrice(t.trackPrice) }}</span>
+          <div class="info"><router-link :to="`/track/${t.trackId}`" data-testid="album-track-link"><h4>{{ t.trackTitle }}</h4></router-link></div>
+          <span class="price" data-testid="album-track-price">{{ formatPrice(t.trackPrice) }}</span>
           <template v-if="authStore.isLoggedIn && libraryStore.isOwned(t.trackId)">
-            <button class="btn btn-sm btn-success" @click="download(t)">Скачать</button>
+            <button class="btn btn-sm btn-success" @click="download(t)" data-testid="album-track-download-btn">Скачать</button>
           </template>
           <template v-else-if="authStore.isLoggedIn">
-            <button v-if="!cartStore.isInCart(t.trackId)" class="btn btn-sm" @click="addToCart(t)">В корзину</button>
-            <span v-else>В корзине</span>
+            <button v-if="!cartStore.isInCart(t.trackId)" class="btn btn-sm" @click="addToCart(t)" data-testid="album-track-add-cart-btn">В корзину</button>
+            <span v-else data-testid="album-track-in-cart">В корзине</span>
           </template>
           <template v-else>
-            <router-link to="/login" class="btn btn-sm">Войти</router-link>
+            <router-link to="/login" class="btn btn-sm" data-testid="album-track-login-link">Войти</router-link>
           </template>
         </div>
       </div>
-      <section class="reviews-section">
-        <h2>Отзывы</h2>
-        <div v-if="authStore.isLoggedIn" class="review-form">
-          <select v-model="newRating">
+      <section class="reviews-section" data-testid="reviews-section">
+        <h2 data-testid="reviews-title">Отзывы</h2>
+        <div v-if="authStore.isLoggedIn" class="review-form" data-testid="review-form">
+          <select v-model="newRating" data-testid="review-rating-select">
             <option :value="1">1</option>
             <option :value="2">2</option>
             <option :value="3">3</option>
             <option :value="4">4</option>
             <option :value="5">5</option>
           </select>
-          <input v-model="newComment" placeholder="Комментарий" />
-          <button @click="submitReview" class="btn">Отправить</button>
+          <input v-model="newComment" placeholder="Комментарий" data-testid="review-comment-input" />
+          <button @click="submitReview" class="btn" data-testid="review-submit-btn">Отправить</button>
         </div>
-        <div v-for="r in reviews" :key="r.reviewId" class="review-card">
+        <div v-for="r in reviews" :key="r.reviewId" class="review-card" data-testid="review-card">
           <div class="review-header">
-            <span class="author">{{ r.reviewUser?.userUsername || 'Аноним' }}</span>
-            <span class="rating">{{ r.reviewRating }}/5</span>
-            <span class="date">{{ new Date(r.reviewDate).toLocaleDateString() }}</span>
+            <span class="author" data-testid="review-author">{{ r.reviewUser?.userUsername || 'Аноним' }}</span>
+            <span class="rating" data-testid="review-rating">{{ r.reviewRating }}/5</span>
+            <span class="date" data-testid="review-date">{{ new Date(r.reviewDate).toLocaleDateString() }}</span>
           </div>
-          <p>{{ r.reviewComment }}</p>
+          <p data-testid="review-comment">{{ r.reviewComment }}</p>
         </div>
-        <p v-if="reviews.length === 0">Пока нет отзывов</p>
+        <p v-if="reviews.length === 0" data-testid="reviews-empty">Пока нет отзывов</p>
       </section>
     </template>
-    <div v-else class="empty-state"><p>Не найден</p></div>
+    <div v-else class="empty-state" data-testid="album-not-found"><p>Не найден</p></div>
   </div>
 </template>
 

@@ -1,7 +1,7 @@
 <template>
-  <div class="app-layout">
+  <div class="app-layout" data-testid="app-layout">
     <AppHeader />
-    <main class="main-content">
+    <main class="main-content" data-testid="main-content">
       <router-view />
     </main>
     <AppFooter />

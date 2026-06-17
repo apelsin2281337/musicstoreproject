@@ -1,23 +1,23 @@
 <template>
-  <header class="header">
+  <header class="header" data-testid="app-header">
     <div class="container header-inner">
-      <router-link to="/" class="logo">apelsinmusic</router-link>
-      <nav class="nav">
-        <router-link to="/">Главная</router-link>
-        <router-link to="/browse">Каталог</router-link>
-        <router-link v-if="authStore.isLoggedIn" to="/library">Медиатека</router-link>
-        <router-link v-if="authStore.isLoggedIn" to="/playlists">Плейлисты</router-link>
-        <router-link v-if="authStore.isAdmin" to="/admin">Админ</router-link>
+      <router-link to="/" class="logo" data-testid="header-logo">apelsinmusic</router-link>
+      <nav class="nav" data-testid="header-nav">
+        <router-link to="/" data-testid="nav-home">Главная</router-link>
+        <router-link to="/browse" data-testid="nav-browse">Каталог</router-link>
+        <router-link v-if="authStore.isLoggedIn" to="/library" data-testid="nav-library">Медиатека</router-link>
+        <router-link v-if="authStore.isLoggedIn" to="/playlists" data-testid="nav-playlists">Плейлисты</router-link>
+        <router-link v-if="authStore.isAdmin" to="/admin" data-testid="nav-admin">Админ</router-link>
       </nav>
-      <div class="actions">
-        <router-link to="/cart">Корзина <span v-if="cartStore.count">({{ cartStore.count }})</span></router-link>
+      <div class="actions" data-testid="header-actions">
+        <router-link to="/cart" data-testid="header-cart">Корзина <span v-if="cartStore.count" data-testid="cart-count">({{ cartStore.count }})</span></router-link>
         <template v-if="authStore.isLoggedIn">
-          <span>{{ authStore.username }}</span>
-          <button class="loginbtn" @click="logout">Выйти</button>
+          <span data-testid="header-username">{{ authStore.username }}</span>
+          <button class="loginbtn" @click="logout" data-testid="header-logout">Выйти</button>
         </template>
         <template v-else>
-          <router-link to="/login">Войти</router-link>
-          <router-link to="/register">Регистрация</router-link>
+          <router-link to="/login" data-testid="header-login">Войти</router-link>
+          <router-link to="/register" data-testid="header-register">Регистрация</router-link>
         </template>
       </div>
     </div>

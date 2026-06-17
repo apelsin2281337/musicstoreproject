@@ -42,7 +42,6 @@ public class UserService {
         paymentTransactionRepository.save(transaction);
 
         userRepository.addPurchasedTracks(userId, trackIds);
-        
         return order;
     }
 

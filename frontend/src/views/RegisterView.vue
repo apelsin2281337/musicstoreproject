@@ -1,21 +1,21 @@
 <template>
-  <div class="auth-page">
-    <div class="auth-card">
-      <h1>Регистрация</h1>
-      <div v-if="error" class="alert alert-error">{{ error }}</div>
-      <div v-if="success" class="alert alert-success">{{ success }}</div>
-      <form @submit.prevent="handleRegister">
+  <div class="auth-page" data-testid="register-page">
+    <div class="auth-card" data-testid="register-card">
+      <h1 data-testid="register-title">Регистрация</h1>
+      <div v-if="error" class="alert alert-error" data-testid="register-error">{{ error }}</div>
+      <div v-if="success" class="alert alert-success" data-testid="register-success">{{ success }}</div>
+      <form @submit.prevent="handleRegister" data-testid="register-form">
         <div class="form-group">
-          <label class="form-label">Имя пользователя</label>
-          <input v-model="username" type="text" class="form-input" required minlength="3" />
+          <label class="form-label" data-testid="register-username-label">Имя пользователя</label>
+          <input v-model="username" type="text" class="form-input" required minlength="3" data-testid="register-username-input" />
         </div>
         <div class="form-group">
-          <label class="form-label">Пароль</label>
-          <input v-model="password" type="password" class="form-input" required minlength="4" />
+          <label class="form-label" data-testid="register-password-label">Пароль</label>
+          <input v-model="password" type="password" class="form-input" required minlength="4" data-testid="register-password-input" />
         </div>
-        <button type="submit" class="btn" :disabled="loading">{{ loading ? '...' : 'Зарегистрироваться' }}</button>
+        <button type="submit" class="btn" :disabled="loading" data-testid="register-submit-btn">{{ loading ? '...' : 'Зарегистрироваться' }}</button>
       </form>
-      <p class="footer">Есть аккаунт? <router-link to="/login">Войти</router-link></p>
+      <p class="footer" data-testid="register-login-link">Есть аккаунт? <router-link to="/login">Войти</router-link></p>
     </div>
   </div>
 </template>

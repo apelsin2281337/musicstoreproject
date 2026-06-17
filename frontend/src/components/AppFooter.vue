@@ -1,6 +1,6 @@
 <template>
-  <footer class="app-footer">
-    <p>Music Store 2026</p>
+  <footer class="app-footer" data-testid="app-footer">
+    <p data-testid="footer-text">Music Store 2026</p>
   </footer>
 </template>
 

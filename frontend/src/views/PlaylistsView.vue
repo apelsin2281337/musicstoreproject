@@ -1,30 +1,30 @@
 <template>
-  <div class="playlists-page container">
+  <div class="playlists-page container" data-testid="playlists-page">
     <div class="header">
-      <h1 class="page-title">Плейлисты</h1>
-      <button class="btn" @click="showCreateModal = true">+ Создать</button>
+      <h1 class="page-title" data-testid="playlists-title">Плейлисты</h1>
+      <button class="btn" @click="showCreateModal = true" data-testid="playlists-create-btn">+ Создать</button>
     </div>
 
-    <div v-if="libraryStore.loading" class="loading"><div class="spinner"></div></div>
-    <div v-else-if="libraryStore.playlists.length === 0" class="empty-state"><p>Нет плейлистов</p></div>
-    <div v-else class="list">
-      <div v-for="p in libraryStore.playlists" :key="p.playlistId" class="item">
-        <router-link :to="`/playlist/${p.playlistId}`" class="item-link">
-          <h4>{{ p.playlistTitle }}</h4>
-          <span>{{ p.playlistTracks?.length || 0 }} треков</span>
+    <div v-if="libraryStore.loading" class="loading" data-testid="loading-spinner"><div class="spinner"></div></div>
+    <div v-else-if="libraryStore.playlists.length === 0" class="empty-state" data-testid="playlists-empty"><p>Нет плейлистов</p></div>
+    <div v-else class="list" data-testid="playlists-list">
+      <div v-for="p in libraryStore.playlists" :key="p.playlistId" class="item" data-testid="playlists-list-item">
+        <router-link :to="`/playlist/${p.playlistId}`" class="item-link" data-testid="playlists-item-link">
+          <h4 data-testid="playlists-item-title">{{ p.playlistTitle }}</h4>
+          <span data-testid="playlists-item-count">{{ p.playlistTracks?.length || 0 }} треков</span>
         </router-link>
-          <button class="btn btn-link btn-danger" @click="confirmDelete(p)">×</button>
+          <button class="btn btn-link btn-danger" @click="confirmDelete(p)" data-testid="playlists-delete-btn">×</button>
       </div>
     </div>
 
-    <div v-if="showCreateModal" class="modal" @click.self="closeModal">
-      <div class="modal-content">
-        <h3>Новый плейлист</h3>
-        <form @submit.prevent="createPlaylist">
-          <input v-model="newPlaylistTitle" class="form-input" placeholder="Название" required autofocus />
+    <div v-if="showCreateModal" class="modal" @click.self="closeModal" data-testid="playlists-create-modal">
+      <div class="modal-content" data-testid="playlists-create-modal-content">
+        <h3 data-testid="playlists-create-modal-title">Новый плейлист</h3>
+        <form @submit.prevent="createPlaylist" data-testid="playlists-create-form">
+          <input v-model="newPlaylistTitle" class="form-input" placeholder="Название" required autofocus data-testid="playlists-create-input" />
           <div class="actions">
-            <button type="button" class="btn btn-secondary" @click="closeModal">Отмена</button>
-            <button type="submit" class="btn">Создать</button>
+            <button type="button" class="btn btn-secondary" @click="closeModal" data-testid="playlists-create-cancel">Отмена</button>
+            <button type="submit" class="btn" data-testid="playlists-create-submit">Создать</button>
           </div>
         </form>
       </div>

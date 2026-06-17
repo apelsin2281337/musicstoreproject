@@ -1,17 +1,17 @@
 <template>
-  <div class="genre-page container">
-    <div v-if="musicStore.loading" class="loading"><div class="spinner"></div></div>
+  <div class="genre-page container" data-testid="genre-page">
+    <div v-if="musicStore.loading" class="loading" data-testid="loading-spinner"><div class="spinner"></div></div>
     <template v-else-if="genre">
       <div class="page-header">
-        <h1 class="page-title">{{ genre.genreName }}</h1>
+        <h1 class="page-title" data-testid="genre-title">{{ genre.genreName }}</h1>
       </div>
 
-      <div v-if="genreTracks.length === 0" class="empty-state"><p>Нет треков в этом жанре</p></div>
-      <div v-else class="track-list">
+      <div v-if="genreTracks.length === 0" class="empty-state" data-testid="empty-genre-tracks"><p>Нет треков в этом жанре</p></div>
+      <div v-else class="track-list" data-testid="genre-tracks-list">
         <TrackCard v-for="t in genreTracks" :key="t.trackId" :track="t" />
       </div>
     </template>
-    <div v-else class="empty-state"><p>Жанр не найден</p></div>
+    <div v-else class="empty-state" data-testid="genre-not-found"><p>Жанр не найден</p></div>
   </div>
 </template>
 
