@@ -37,7 +37,7 @@ services:
     build: ./frontend
     container_name: musicstore_frontend
     ports:
-      - "5173:5173"
+      - "80:5173"
     depends_on:
       - backend
     environment:
