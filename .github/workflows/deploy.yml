@@ -16,6 +16,7 @@ jobs:
           host: ${{ secrets.SERVER_IP }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          passphrase: ${{ secrets.SSH_KEY_PASSPHRASE }}
           script: |
             if [ ! -d "${{ secrets.PROJECT_PATH }}" ]; then
               git clone git@github.com:${{ github.repository }}.git ${{ secrets.PROJECT_PATH }}
